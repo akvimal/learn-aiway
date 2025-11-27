@@ -1,0 +1,109 @@
+name: Epic
+description: Create a large feature or initiative
+title: "[EPIC] "
+labels: ["epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Epic Template
+        Use this template to create a major feature or initiative that contains multiple stories.
+
+  - type: input
+    id: title
+    attributes:
+      label: Epic Title
+      description: A clear, concise title for this epic
+      placeholder: "e.g., User Authentication System"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is this epic about? What problem does it solve?
+      placeholder: |
+        Describe the overall goal and scope of this epic.
+        Include business value and user impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals and Objectives
+      description: What are the key goals this epic aims to achieve?
+      placeholder: |
+        - Goal 1: Enable users to securely register and login
+        - Goal 2: Implement role-based access control
+        - Goal 3: Support OAuth providers
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What's included and excluded in this epic?
+      placeholder: |
+        **In Scope:**
+        - User registration and login
+        - JWT authentication
+        - Password reset flow
+
+        **Out of Scope:**
+        - Social media integration (future epic)
+        - Two-factor authentication (future epic)
+    validations:
+      required: false
+
+  - type: textarea
+    id: success-criteria
+    attributes:
+      label: Success Criteria
+      description: How will we know this epic is complete and successful?
+      placeholder: |
+        - [ ] Users can register with email/password
+        - [ ] Users can login and receive JWT token
+        - [ ] Protected routes require authentication
+        - [ ] All security tests pass
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this epic?
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Implementation Phase
+      description: Which phase does this belong to?
+      options:
+        - Phase 1 - MVP
+        - Phase 2 - Enhanced
+        - Phase 3 - Advanced
+        - Phase 4 - Polish
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Considerations
+      description: Any technical details, dependencies, or constraints?
+      placeholder: |
+        - Requires PostgreSQL database
+        - Will use JWT for stateless auth
+        - Need to integrate with existing user schema
+    validations:
+      required: false

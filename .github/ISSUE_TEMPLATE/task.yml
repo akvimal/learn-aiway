@@ -1,0 +1,128 @@
+name: Task
+description: Create an implementation task
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Task Template
+        Use this template for specific implementation tasks.
+
+  - type: input
+    id: title
+    attributes:
+      label: Task Title
+      description: A clear, concise title for this task
+      placeholder: "e.g., Setup authentication database schema"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be done?
+      placeholder: |
+        Describe the specific implementation work required.
+        Include technical details and context.
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-details
+    attributes:
+      label: Implementation Details
+      description: Detailed steps or approach for implementation
+      placeholder: |
+        1. Create users table with fields: id, email, password_hash, name, role
+        2. Add timestamps: created_at, updated_at
+        3. Create indexes on email for fast lookup
+        4. Write migration script
+        5. Test migration on development database
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How will we verify this task is complete?
+      placeholder: |
+        - [ ] Users table created with all required fields
+        - [ ] Email field has unique constraint
+        - [ ] Indexes created on email column
+        - [ ] Migration can be run and rolled back
+        - [ ] Schema matches design document
+    validations:
+      required: true
+
+  - type: input
+    id: parent-story
+    attributes:
+      label: Parent Story
+      description: "Issue number of the parent story (e.g., #5)"
+      placeholder: "#5"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this task?
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: labels
+    attributes:
+      label: Task Type
+      description: What type of work is this?
+      options:
+        - label: Backend
+        - label: Frontend
+        - label: Database
+        - label: API
+        - label: Testing
+        - label: Documentation
+        - label: DevOps
+        - label: Security
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Code snippets, file paths, or technical details
+      placeholder: |
+        **Files to modify:**
+        - backend/migrations/001_create_users_table.sql
+        - backend/src/models/user.model.ts
+
+        **SQL:**
+        ```sql
+        CREATE TABLE users (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          ...
+        );
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What must be completed before this task?
+      placeholder: |
+        - PostgreSQL database must be set up
+        - Migration tool configured
+        - Depends on completion of #3
+    validations:
+      required: false

@@ -1,0 +1,171 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Build and push Backend image
+        run: |
+          docker build -t registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-backend:${{ github.sha }} \
+                       -t registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-backend:latest \
+                       -f docker/backend.Dockerfile ./backend
+          docker push registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-backend:${{ github.sha }}
+          docker push registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-backend:latest
+
+      - name: Build and push Frontend image
+        run: |
+          docker build -t registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-frontend:${{ github.sha }} \
+                       -t registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-frontend:latest \
+                       -f docker/frontend.Dockerfile ./frontend
+          docker push registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-frontend:${{ github.sha }}
+          docker push registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/ai-learning-frontend:latest
+
+      - name: Deploy to DigitalOcean App Platform
+        run: |
+          doctl apps create-deployment ${{ secrets.APP_ID }} --wait
+
+      - name: Get deployment URL
+        id: url
+        run: |
+          URL=$(doctl apps get ${{ secrets.APP_ID }} --format DefaultIngress --no-header)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Comment deployment status on related issues
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commits = await github.rest.repos.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              per_page: 10
+            });
+
+            const issueNumbers = new Set();
+            for (const commit of commits.data) {
+              const matches = commit.commit.message.matchAll(/#(\d+)/g);
+              for (const match of matches) {
+                issueNumbers.add(match[1]);
+              }
+            }
+
+            const deploymentUrl = '${{ steps.url.outputs.url }}';
+            const environment = '${{ github.event.inputs.environment || 'production' }}';
+
+            for (const issueNumber of issueNumbers) {
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🚀 Deployed to ${environment}: ${deploymentUrl}\n\nCommit: ${context.sha.substring(0, 7)}`
+                });
+              } catch (error) {
+                console.log(`Could not comment on issue #${issueNumber}: ${error.message}`);
+              }
+            }
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release, get all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Get commits since previous tag
+            COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Extract issue references
+          ISSUES=$(echo "$COMMITS" | grep -oE '#[0-9]+' | sort -u | tr '\n' ' ')
+
+          # Create changelog
+          CHANGELOG="## What's Changed\n\n${COMMITS}\n\n## Related Issues\n\n${ISSUES}"
+
+          # Save to file
+          echo -e "$CHANGELOG" > CHANGELOG.md
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+
+      - name: Close milestone
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+
+            const version = context.ref.replace('refs/tags/', '');
+            const milestone = milestones.data.find(m => m.title === version);
+
+            if (milestone) {
+              await github.rest.issues.updateMilestone({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                milestone_number: milestone.number,
+                state: 'closed'
+              });
+              console.log(`Closed milestone: ${version}`);
+            }

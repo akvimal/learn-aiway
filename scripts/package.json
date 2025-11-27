@@ -1,0 +1,21 @@
+{
+  "name": "ai-assisted-learn-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for AI-Assisted Learning Platform",
+  "scripts": {
+    "verify": "node verify-setup.js",
+    "create-repo": "node create-repo.js",
+    "import-jira": "node import-to-jira.js",
+    "create-issues": "node create-github-issues.js",
+    "create-issues:dry-run": "cross-env DRY_RUN=true node create-github-issues.js",
+    "create-issues:dry-run:win": "set DRY_RUN=true && node create-github-issues.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}

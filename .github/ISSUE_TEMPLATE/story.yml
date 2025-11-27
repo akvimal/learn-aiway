@@ -1,0 +1,134 @@
+name: User Story
+description: Create a user-facing feature or functionality
+title: "[STORY] "
+labels: ["story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## User Story Template
+        Use this template to create user-facing features or functionality.
+
+  - type: input
+    id: title
+    attributes:
+      label: Story Title
+      description: A clear, concise title for this story
+      placeholder: "e.g., User Registration and Login"
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Write in the format "As a [role], I want [goal], so that [benefit]"
+      placeholder: |
+        As a learner
+        I want to register and login to the platform
+        So that I can access my personalized learning content and track my progress
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Detailed Description
+      description: Provide more context about this story
+      placeholder: |
+        Describe what needs to be implemented, any specific requirements,
+        and how it fits into the larger feature set.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true for this story to be considered complete?
+      placeholder: |
+        - [ ] User can register with email and password
+        - [ ] Email validation is performed
+        - [ ] User receives verification email
+        - [ ] User can login with valid credentials
+        - [ ] Invalid credentials show appropriate error message
+        - [ ] JWT token is generated on successful login
+    validations:
+      required: true
+
+  - type: input
+    id: epic
+    attributes:
+      label: Parent Epic
+      description: "Issue number of the parent epic (e.g., #1)"
+      placeholder: "#1"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this story?
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: input
+    id: story-points
+    attributes:
+      label: Story Points
+      description: Estimated effort (Fibonacci sequence 1,2,3,5,8,13)
+      placeholder: "5"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: components
+    attributes:
+      label: Components
+      description: Which parts of the system are affected?
+      options:
+        - label: Backend
+        - label: Frontend
+        - label: Database
+        - label: API
+        - label: UI/UX
+        - label: AI/ML
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Implementation details, API endpoints, dependencies, etc.
+      placeholder: |
+        **API Endpoints:**
+        - POST /api/auth/register
+        - POST /api/auth/login
+
+        **Dependencies:**
+        - bcrypt for password hashing
+        - jsonwebtoken for JWT generation
+
+        **Database:**
+        - users table required
+    validations:
+      required: false
+
+  - type: textarea
+    id: test-scenarios
+    attributes:
+      label: Test Scenarios
+      description: Key scenarios to test
+      placeholder: |
+        1. Happy path: Successful registration and login
+        2. Invalid email format
+        3. Password too short
+        4. Email already exists
+        5. Login with wrong password
+        6. Login with non-existent email
+    validations:
+      required: false
