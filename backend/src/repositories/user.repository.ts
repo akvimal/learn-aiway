@@ -162,6 +162,35 @@ export class UserRepository {
     );
   }
 
+  async updateProfile(userId: string, updates: { first_name?: string; last_name?: string }): Promise<UserModel> {
+    const updateFields = [];
+    const values = [];
+    let parameterIndex = 1;
+
+    for (const [key, value] of Object.entries(updates)) {
+      updateFields.push(`${key} = $${parameterIndex}`);
+      values.push(value);
+      parameterIndex++;
+    }
+
+    values.push(userId);
+
+    const query = `
+      UPDATE users
+      SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${parameterIndex}
+      RETURNING *
+    `;
+
+    const result = await database.query<User>(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error('User not found');
+    }
+
+    return new UserModel(result.rows[0]);
+  }
+
   /**
    * Get all users with pagination and filtering (admin only)
    */
