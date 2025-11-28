@@ -161,6 +161,137 @@ export class UserRepository {
       'DELETE FROM refresh_tokens WHERE expires_at < CURRENT_TIMESTAMP OR revoked_at IS NOT NULL'
     );
   }
+
+  /**
+   * Get all users with pagination and filtering (admin only)
+   */
+  async getAllUsers(
+    filters: { role?: string; search?: string },
+    limit: number,
+    offset: number
+  ): Promise<{ users: UserModel[]; total: number }> {
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (filters.role) {
+      conditions.push(`role = $${paramIndex}`);
+      values.push(filters.role);
+      paramIndex++;
+    }
+
+    if (filters.search) {
+      conditions.push(`(email ILIKE $${paramIndex} OR first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex})`);
+      values.push(`%${filters.search}%`);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) FROM users ${whereClause}`;
+    const countResult = await database.query(countQuery, values);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    // Get users with pagination
+    const query = `
+      SELECT * FROM users
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    values.push(limit, offset);
+
+    const result = await database.query<User>(query, values);
+    const users = result.rows.map((row) => new UserModel(row));
+
+    return { users, total };
+  }
+
+  /**
+   * Update user role (admin only)
+   */
+  async updateRole(userId: string, newRole: UserRole): Promise<UserModel> {
+    const result = await database.query<User>(
+      `UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      [newRole, userId]
+    );
+
+    if (!result.rows[0]) {
+      throw new Error('User not found');
+    }
+
+    return new UserModel(result.rows[0]);
+  }
+
+  /**
+   * Update user active status (admin only)
+   */
+  async updateStatus(userId: string, is_active: boolean): Promise<UserModel> {
+    const result = await database.query<User>(
+      `UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      [is_active, userId]
+    );
+
+    if (!result.rows[0]) {
+      throw new Error('User not found');
+    }
+
+    return new UserModel(result.rows[0]);
+  }
+
+  /**
+   * Count users by role
+   */
+  async countByRole(role: UserRole): Promise<number> {
+    const result = await database.query(
+      'SELECT COUNT(*) FROM users WHERE role = $1 AND is_active = true',
+      [role]
+    );
+    return parseInt(result.rows[0].count, 10);
+  }
+
+  /**
+   * Get user statistics (admin only)
+   */
+  async getUserStats(): Promise<{
+    total: number;
+    byRole: Record<string, number>;
+    active: number;
+    inactive: number;
+    emailVerified: number;
+    emailUnverified: number;
+  }> {
+    const statsQuery = `
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE role = 'learner') as learners,
+        COUNT(*) FILTER (WHERE role = 'instructor') as instructors,
+        COUNT(*) FILTER (WHERE role = 'admin') as admins,
+        COUNT(*) FILTER (WHERE is_active = true) as active,
+        COUNT(*) FILTER (WHERE is_active = false) as inactive,
+        COUNT(*) FILTER (WHERE is_email_verified = true) as email_verified,
+        COUNT(*) FILTER (WHERE is_email_verified = false) as email_unverified
+      FROM users
+    `;
+
+    const result = await database.query(statsQuery);
+    const stats = result.rows[0];
+
+    return {
+      total: parseInt(stats.total, 10),
+      byRole: {
+        learner: parseInt(stats.learners, 10),
+        instructor: parseInt(stats.instructors, 10),
+        admin: parseInt(stats.admins, 10),
+      },
+      active: parseInt(stats.active, 10),
+      inactive: parseInt(stats.inactive, 10),
+      emailVerified: parseInt(stats.email_verified, 10),
+      emailUnverified: parseInt(stats.email_unverified, 10),
+    };
+  }
 }
 
 export const userRepository = new UserRepository();

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.config';
 import { logger } from './config/logger.config';
 import authRoutes from './api/routes/auth.routes';
+import adminRoutes from './api/routes/admin.routes';
 import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
 
 export function createApp(): Application {
@@ -34,7 +35,7 @@ export function createApp(): Application {
   app.use(cookieParser());
 
   // Request logging middleware
-  app.use((req, res, next) => {
+  app.use((req, _res, next) => {
     logger.info(`${req.method} ${req.path}`, {
       query: req.query,
       body: req.method !== 'GET' ? req.body : undefined,
@@ -43,7 +44,7 @@ export function createApp(): Application {
   });
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -54,6 +55,7 @@ export function createApp(): Application {
   // API routes
   const apiVersion = env.API_VERSION;
   app.use(`/api/${apiVersion}/auth`, authRoutes);
+  app.use(`/api/${apiVersion}/admin`, adminRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
