@@ -60,3 +60,45 @@ export interface ApiResponse<T = any> {
     requestId?: string;
   };
 }
+
+export enum LearningPace {
+  SLOW = 'slow',
+  MEDIUM = 'medium',
+  FAST = 'fast',
+}
+
+export enum AIModelPreference {
+  GPT_4 = 'gpt-4',
+  GPT_3_5_TURBO = 'gpt-3.5-turbo',
+  CLAUDE_3 = 'claude-3',
+  CLAUDE_2 = 'claude-2',
+}
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  learning_pace: LearningPace;
+  preferred_ai_model: AIModelPreference;
+  daily_study_time_minutes: number;
+  enable_email_notifications: boolean;
+  enable_push_notifications: boolean;
+  timezone: string;
+  language: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface UserProfileUpdateInput {
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface UserPreferencesUpdateInput {
+  learning_pace?: LearningPace;
+  preferred_ai_model?: AIModelPreference;
+  daily_study_time_minutes?: number;
+  enable_email_notifications?: boolean;
+  enable_push_notifications?: boolean;
+  timezone?: string;
+  language?: string;
+}

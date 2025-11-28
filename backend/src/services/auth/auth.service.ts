@@ -6,6 +6,7 @@ import {
   ValidationError,
 } from '../../utils/errors.util';
 import {
+  User,
   UserCreateInput,
   UserLoginInput,
   JwtPayload,
@@ -18,7 +19,7 @@ import { logger } from '../../config/logger.config';
 
 export class AuthService {
   async register(data: UserCreateInput): Promise<{
-    user: Omit<UserModel, 'password_hash'>;
+    user: Omit<User, 'password_hash'>;
     tokens: TokenPair;
   }> {
     // Validate input
@@ -58,7 +59,7 @@ export class AuthService {
   }
 
   async login(data: UserLoginInput): Promise<{
-    user: Omit<UserModel, 'password_hash'>;
+    user: Omit<User, 'password_hash'>;
     tokens: TokenPair;
   }> {
     // Find user by email
