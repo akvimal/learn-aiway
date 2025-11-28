@@ -22,25 +22,80 @@ const DELAY_MS = 2000; // Delay between batches to avoid rate limiting
 
 // Color scheme for labels
 const LABEL_COLORS = {
+  // Issue types
   epic: '8B4789',
   story: '0E8A16',
   task: 'FBCA04',
+  bug: 'D93F0B',
+
+  // Components
   backend: '0E8A16',
   frontend: '1D76DB',
-  ai: 'FF6B6B',
   database: '5319E7',
-  security: 'D93F0B',
-  ui: '66D9EF',
   api: 'F9D0C4',
-  mvp: 'C2E0C6',
+  ui: '66D9EF',
+
+  // Features
+  ai: 'FF6B6B',
   auth: 'E99695',
+  users: 'BFDADC',
+  profile: 'C5DEF5',
   curriculum: 'BFD4F2',
+  learning: 'D4C5F9',
+  sessions: 'F9EAC5',
   evaluation: 'F9C0D4',
   analytics: 'C5DEF5',
+  progress: 'A8E6CF',
+
+  // Technical
+  security: 'D93F0B',
   testing: 'FEF2C0',
   documentation: 'EDEDED',
-  devops: '000000',
-  infrastructure: '0E8A16',
+  devops: '424242',
+  infrastructure: '616161',
+  docker: '2496ED',
+  deployment: '00D084',
+
+  // Areas
+  rbac: 'FFB6C1',
+  navigation: '87CEEB',
+  interaction: 'DDA0DD',
+  generation: 'F0E68C',
+  gaps: 'FFE4B5',
+  mastery: 'E6E6FA',
+  export: 'B0E0E6',
+
+  // Priority
+  mvp: 'C2E0C6',
+  'code-execution': 'FF8C00',
+  adaptive: 'DA70D6',
+
+  // Model related
+  models: 'FF69B4',
+  config: '9370DB',
+  switching: '20B2AA',
+  'local-llm': '8A2BE2',
+
+  // Specific features
+  recommendations: 'F5DEB3',
+  'code-review': 'FF6347',
+  quiz: 'FFD700',
+  scenario: '98FB98',
+  monitoring: 'FFA07A',
+  logging: 'CD853F',
+  migrations: '4682B4',
+  backups: '2F4F4F',
+
+  // Documentation
+  docs: 'EDEDED',
+  'user-guide': 'F0F0F0',
+  'api-docs': 'E8E8E8',
+
+  // Misc
+  setup: 'DEB887',
+  guided: '90EE90',
+  exploratory: '87CEFA',
+  admin: 'FF4500',
 };
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -115,59 +170,95 @@ function checkRepository() {
 function createLabel(name, color, description = '') {
   const labelName = name.toLowerCase();
 
-  try {
-    // Check if label exists
-    exec(`gh label list --search "${labelName}"`, { silent: true });
-    console.log(`  Label "${labelName}" already exists`);
-  } catch (error) {
-    // Create label
-    const cmd = `gh label create "${labelName}" --color "${color}" --description "${description}"`;
+  if (DRY_RUN) {
+    console.log(`  [DRY RUN] Would create label: ${labelName}`);
+    return true;
+  }
 
-    if (DRY_RUN) {
-      console.log(`  [DRY RUN] Would create label: ${cmd}`);
-    } else {
-      try {
-        exec(cmd);
-        console.log(`  ✓ Created label: ${labelName}`);
-      } catch (err) {
-        console.log(`  ⚠ Could not create label ${labelName} (may already exist)`);
-      }
+  try {
+    // Try to create the label
+    const cmd = `gh label create "${labelName}" --color "${color}" --description "${description}"`;
+    console.log(`  Creating: ${labelName}...`);
+
+    execSync(cmd, {
+      encoding: 'utf-8',
+      stdio: 'inherit' // Show output in real-time for debugging
+    });
+
+    console.log(`  ✓ Created label: ${labelName}`);
+    return true;
+  } catch (err) {
+    console.log(`  ✗ Failed to create label: ${labelName}`);
+    if (err.stderr) {
+      console.log(`     Error: ${err.stderr.toString()}`);
     }
+    return false;
   }
 }
 
 /**
- * Setup all labels
+ * Extract all unique labels from issues
  */
-function setupLabels() {
+function extractLabelsFromIssues(issues) {
+  const labelSet = new Set();
+
+  issues.forEach(issue => {
+    if (issue.Labels) {
+      issue.Labels.split('|').forEach(label => {
+        labelSet.add(label.trim().toLowerCase());
+      });
+    }
+    // Add issue type as label
+    if (issue['Issue Type']) {
+      labelSet.add(issue['Issue Type'].toLowerCase());
+    }
+  });
+
+  return Array.from(labelSet);
+}
+
+/**
+ * Setup all labels from CSV
+ */
+function setupLabels(issues) {
   console.log('Setting up labels...\n');
 
-  const labels = [
-    { name: 'epic', color: LABEL_COLORS.epic, description: 'Epic-level feature grouping' },
-    { name: 'story', color: LABEL_COLORS.story, description: 'User story' },
-    { name: 'task', color: LABEL_COLORS.task, description: 'Implementation task' },
-    { name: 'backend', color: LABEL_COLORS.backend, description: 'Backend work' },
-    { name: 'frontend', color: LABEL_COLORS.frontend, description: 'Frontend work' },
-    { name: 'ai', color: LABEL_COLORS.ai, description: 'AI/ML related' },
-    { name: 'database', color: LABEL_COLORS.database, description: 'Database work' },
-    { name: 'security', color: LABEL_COLORS.security, description: 'Security related' },
-    { name: 'ui', color: LABEL_COLORS.ui, description: 'User interface' },
-    { name: 'api', color: LABEL_COLORS.api, description: 'API work' },
-    { name: 'mvp', color: LABEL_COLORS.mvp, description: 'MVP priority' },
-    { name: 'auth', color: LABEL_COLORS.auth, description: 'Authentication' },
-    { name: 'curriculum', color: LABEL_COLORS.curriculum, description: 'Curriculum management' },
-    { name: 'evaluation', color: LABEL_COLORS.evaluation, description: 'Evaluation system' },
-    { name: 'analytics', color: LABEL_COLORS.analytics, description: 'Analytics/reporting' },
-    { name: 'testing', color: LABEL_COLORS.testing, description: 'Testing related' },
-    { name: 'documentation', color: LABEL_COLORS.documentation, description: 'Documentation' },
-    { name: 'devops', color: LABEL_COLORS.devops, description: 'DevOps/infrastructure' },
-  ];
+  // Extract all unique labels from CSV
+  const labelsFromCSV = extractLabelsFromIssues(issues);
 
-  labels.forEach(label => {
-    createLabel(label.name, label.color, label.description);
+  console.log(`Found ${labelsFromCSV.length} unique labels to create\n`);
+
+  // Create each label and track success
+  let successCount = 0;
+  let failCount = 0;
+
+  labelsFromCSV.forEach(labelName => {
+    const color = LABEL_COLORS[labelName] || 'CCCCCC'; // Default gray if not defined
+    const description = `Label: ${labelName}`;
+    const success = createLabel(labelName, color, description);
+    if (success) {
+      successCount++;
+    } else {
+      failCount++;
+    }
   });
 
   console.log('');
+  console.log(`Labels created: ${successCount} successful, ${failCount} failed\n`);
+
+  if (failCount > 0) {
+    console.log('⚠️  Warning: Some labels failed to create. Issues may fail if they use these labels.\n');
+    console.log('Do you want to continue anyway? (Ctrl+C to cancel, Enter to continue)');
+    // Give user a chance to cancel
+  } else if (!DRY_RUN) {
+    console.log('Waiting 2 seconds for GitHub to sync labels...');
+    // Small delay to ensure labels are available
+    const start = Date.now();
+    while (Date.now() - start < 2000) {
+      // Blocking wait
+    }
+    console.log('');
+  }
 }
 
 /**
@@ -300,10 +391,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Setup labels
-  setupLabels();
-
-  // Read CSV
+  // Read CSV first
   const csvPath = path.join(__dirname, '..', 'jira-tickets-import.csv');
 
   if (!fs.existsSync(csvPath)) {
@@ -322,6 +410,9 @@ async function main() {
   });
 
   console.log(`Found ${issues.length} issues to create\n`);
+
+  // Setup labels from CSV
+  setupLabels(issues);
 
   // Separate by type
   const epics = issues.filter(i => i['Issue Type'] === 'Epic');

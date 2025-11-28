@@ -14,31 +14,20 @@ A comprehensive web application that enables learners to study any domain (Java,
 
 ## Quick Start
 
-### 1. Import JIRA Tickets
-
-```bash
-# Option 1: CSV Import via JIRA UI
-# Go to JIRA → Import → Upload jira-tickets-import.csv
-
-# Option 2: API Import
-npm install
-node scripts/import-to-jira.js
-```
-
-### 2. Clone and Setup
+### 1. Clone and Setup
 
 ```bash
 # Clone repository
 git clone https://github.com/your-org/ai-assisted-learn.git
 cd ai-assisted-learn
 
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your JIRA and GitHub credentials
+# Install dependencies for GitHub automation
+cd scripts
+npm install
+cd ..
 
 # Setup backend
 cd backend
-cp .env.example .env
 npm install
 cd ..
 
@@ -48,11 +37,23 @@ npm install
 cd ..
 ```
 
+### 2. Create GitHub Issues
+
+```bash
+# Preview issues that will be created (dry run)
+cd scripts
+npm run create-issues:dry-run
+
+# Create all GitHub issues with proper labels and hierarchy
+npm run create-issues
+cd ..
+```
+
 ### 3. Start Development Environment
 
 ```bash
 # Start databases
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose up -d
 
 # Start backend (new terminal)
 cd backend
@@ -63,20 +64,20 @@ cd frontend
 npm run dev
 ```
 
-### 4. Start Working on JIRA Tickets with Claude
+### 4. Start Working on GitHub Issues with Claude
 
 ```bash
-# Start a JIRA ticket
-/jira-start AILEARN-123
+# Start a GitHub issue
+/gh-start 1
 
 # Claude will:
-# 1. Fetch ticket details
+# 1. Fetch issue details from GitHub
 # 2. Create feature branch
 # 3. Create todo list from acceptance criteria
 # 4. Ask if you want to proceed with implementation
 
 # After development, create PR
-/jira-pr AILEARN-123
+/gh-pr
 ```
 
 ## Project Structure
@@ -100,67 +101,65 @@ ai-assisted-learn/
 │   └── public/
 │
 ├── .github/
-│   └── workflows/         # CI/CD and JIRA integration
+│   └── workflows/         # CI/CD and GitHub automation
 │
 ├── .claude/
-│   ├── commands/          # Claude slash commands
-│   └── scripts/           # JIRA integration scripts
+│   └── commands/          # Claude slash commands for GitHub workflow
 │
-├── scripts/               # Utility scripts
+├── scripts/               # GitHub automation and setup scripts
 ├── docs/                  # Documentation
-└── docker/                # Docker configurations
+│   ├── setup/            # Setup guides
+│   ├── deployment/       # Deployment and CI/CD guides
+│   └── github-workflow/  # GitHub workflow documentation
+└── .do/                  # DigitalOcean configuration
 ```
 
 ## Documentation
 
-- **[System Design](design-outline.md)**: Comprehensive design outline
-- **[JIRA Integration Guide](jira-integration-guide.md)**: JIRA-Claude-GitHub workflow
-- **[Project Structure](project-structure.md)**: Detailed project organization
-- **[JIRA Tickets](jira-tickets-import.csv)**: Complete ticket breakdown
+- **[Getting Started](docs/setup/GETTING-STARTED.md)**: Complete setup guide
+- **[GitHub Workflow Guide](docs/github-workflow/GITHUB-WORKFLOW-GUIDE.md)**: GitHub-native development workflow
+- **[Project Structure](docs/project-structure.md)**: Detailed project organization
+- **[CI/CD Guide](docs/deployment/CICD-GUIDE.md)**: CI/CD setup and deployment
+- **[DigitalOcean Setup](docs/deployment/DIGITALOCEAN-SETUP.md)**: Cloud deployment guide
 
 ## Development Workflow
 
-### Working with JIRA Tickets
+### Working with GitHub Issues
 
-1. **Start Ticket**: `/jira-start AILEARN-123`
-   - Fetches ticket details from JIRA
+1. **Start Issue**: `/gh-start 1`
+   - Fetches issue details from GitHub
    - Creates feature branch
    - Displays acceptance criteria
    - Creates todo list
 
 2. **Develop with Claude**
-   - Claude implements based on ticket requirements
+   - Claude implements based on issue requirements
    - Tracks progress with todo list
-   - Updates JIRA status automatically
+   - Commits changes as needed
 
-3. **Commit Changes**
-   ```bash
-   git add .
-   git commit -m "AILEARN-123: Implement user authentication"
-   git push -u origin feature/AILEARN-123-user-auth
-   ```
+3. **Create Pull Request**: `/gh-pr`
+   - Generates PR with issue reference
+   - Includes acceptance criteria checklist
+   - Links to related issues
 
-4. **Create Pull Request**: `/jira-pr AILEARN-123`
-   - Generates PR with JIRA link
-   - Updates JIRA status to "In Review"
-   - Adds PR link to JIRA ticket
-
-5. **Merge and Complete**
-   - PR merged → JIRA status automatically updates to "Done"
-   - Ticket linked to GitHub release
+4. **Merge and Complete**
+   - PR review and approval
+   - Merge to main branch
+   - Issue automatically closed
 
 ### Branch Naming Convention
 
 ```
-feature/AILEARN-123-short-description
-bugfix/AILEARN-456-bug-description
-hotfix/AILEARN-789-critical-fix
+feature/1-user-authentication
+epic/1-user-authentication-account-management
+bugfix/issue-number-description
+hotfix/critical-fix-description
 ```
 
 ### Commit Message Format
 
 ```
-AILEARN-123: Summary of changes
+Summary of changes
 
 - Detailed change 1
 - Detailed change 2
@@ -170,23 +169,23 @@ AILEARN-123: Summary of changes
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
-## JIRA Ticket Breakdown
+## GitHub Issues Breakdown
 
 ### Epics (9 Total)
 
-1. **User Authentication & Account Management** (3 stories, 9 tasks)
-2. **Curriculum Management System** (4 stories, 13 tasks)
-3. **AI Model Integration Layer** (5 stories, 17 tasks)
-4. **Learning Session Management** (3 stories, 8 tasks)
-5. **AI-Powered Learning Interactions** (4 stories, 15 tasks)
-6. **Evaluation and Assessment System** (6 stories, 20 tasks)
-7. **Progress Tracking and Analytics** (3 stories, 8 tasks)
-8. **AI-Generated Curriculum** (1 story, 4 tasks) - Advanced
-9. **Infrastructure and DevOps** (4 stories, 13 tasks)
+1. **User Authentication & Account Management**
+2. **Curriculum Management System**
+3. **AI Model Integration Layer**
+4. **Learning Session Management**
+5. **AI-Powered Learning Interactions**
+6. **Evaluation and Assessment System**
+7. **Progress Tracking and Analytics**
+8. **AI-Generated Curriculum** (Advanced)
+9. **Infrastructure and DevOps**
 
 **Total**: 9 Epics, 33 Stories, 107+ Tasks
 
-See `jira-tickets-import.csv` for complete breakdown.
+Use `/gh-status` to see current progress and available issues.
 
 ## Technology Stack
 
@@ -302,15 +301,6 @@ See `jira-tickets-import.csv` for complete breakdown.
 
 ## Environment Variables
 
-### Root `.env`
-```bash
-JIRA_URL=https://your-domain.atlassian.net
-JIRA_USER=your-email@example.com
-JIRA_API_TOKEN=your-api-token
-JIRA_PROJECT_KEY=AILEARN
-GITHUB_TOKEN=ghp_your_token
-```
-
 ### Backend `.env`
 ```bash
 NODE_ENV=development
@@ -327,16 +317,15 @@ JWT_EXPIRATION=7d
 
 ## Getting API Keys
 
-- **JIRA API Token**: https://id.atlassian.com/manage-profile/security/api-tokens
-- **GitHub Token**: https://github.com/settings/tokens
-- **OpenAI API Key**: https://platform.openai.com/api-keys
-- **Anthropic API Key**: https://console.anthropic.com/settings/keys
+- **GitHub Token**: https://github.com/settings/tokens (for CLI automation)
+- **OpenAI API Key**: https://platform.openai.com/api-keys (configured in app)
+- **Anthropic API Key**: https://console.anthropic.com/settings/keys (configured in app)
 
 ## Database Setup
 
 ```bash
 # Start PostgreSQL and Redis
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose up -d
 
 # Run migrations
 cd backend
@@ -365,33 +354,33 @@ npm run test:e2e        # E2E tests with Playwright
 
 ### Automated Workflows
 - **CI**: Run tests on every PR
-- **CD**: Deploy to staging on merge to `develop`
+- **CD**: Deploy to staging on merge to `main`
 - **Release**: Deploy to production on tag `v*`
-- **JIRA Integration**: Auto-update ticket status on PR events
+- **Project Automation**: Auto-update GitHub project boards
 
 ### GitHub Actions
 - `.github/workflows/ci.yml` - Test and build
-- `.github/workflows/cd.yml` - Deploy
-- `.github/workflows/jira-integration.yml` - JIRA updates
-- `.github/workflows/release.yml` - Release management
+- `.github/workflows/deploy.yml` - Deploy to DigitalOcean
+- `.github/workflows/pr-preview.yml` - Preview deployments
+- `.github/workflows/project-automation.yml` - Project board updates
 
 ## Contributing
 
-1. Pick a JIRA ticket from the backlog
-2. Start with `/jira-start AILEARN-XXX`
+1. Pick a GitHub issue from the board
+2. Start with `/gh-start <issue-number>`
 3. Develop with Claude Code
 4. Follow commit message format
-5. Create PR with `/jira-pr AILEARN-XXX`
+5. Create PR with `/gh-pr`
 6. Wait for review and merge
 
-See [Contributing Guidelines](docs/development/contributing.md) for details.
+See [GitHub Workflow Guide](docs/github-workflow/GITHUB-WORKFLOW-GUIDE.md) for details.
 
 ## Troubleshooting
 
-### JIRA Integration Issues
-- Verify API token has write permissions
-- Check that JIRA_AUTH is base64 encoded
-- Ensure ticket key format matches regex in workflows
+### GitHub CLI Issues
+- Verify GitHub CLI is installed: `gh --version`
+- Authenticate: `gh auth login`
+- Check permissions for repo access
 
 ### Database Connection Issues
 - Verify Docker containers are running: `docker ps`
@@ -405,11 +394,20 @@ See [Contributing Guidelines](docs/development/contributing.md) for details.
 
 ## Resources
 
-- [System Design Outline](design-outline.md)
-- [JIRA Integration Guide](jira-integration-guide.md)
-- [Project Structure Details](project-structure.md)
-- [API Documentation](docs/architecture/api-specification.md)
-- [Development Setup](docs/development/setup.md)
+- [Getting Started Guide](docs/setup/GETTING-STARTED.md)
+- [GitHub Workflow Guide](docs/github-workflow/GITHUB-WORKFLOW-GUIDE.md)
+- [Project Structure Details](docs/project-structure.md)
+- [CI/CD Guide](docs/deployment/CICD-GUIDE.md)
+- [DigitalOcean Setup](docs/deployment/DIGITALOCEAN-SETUP.md)
+
+## Available Claude Commands
+
+- `/gh-start <issue-number>` - Start working on a GitHub issue
+- `/gh-pr` - Create a pull request
+- `/gh-status` - Show current GitHub status
+- `/gh-issue` - Create a new GitHub issue
+- `/gh-review` - Review pull request
+- `/gh-project-setup` - Setup GitHub project board
 
 ## License
 
@@ -419,8 +417,7 @@ MIT License - See LICENSE file for details
 
 - **Issues**: https://github.com/your-org/ai-assisted-learn/issues
 - **Discussions**: https://github.com/your-org/ai-assisted-learn/discussions
-- **JIRA**: https://your-domain.atlassian.net/browse/AILEARN
 
 ---
 
-**Ready to start learning with AI?** Import the JIRA tickets, setup your environment, and start with `/jira-start AILEARN-1`!
+**Ready to start learning with AI?** Create GitHub issues, setup your environment, and start with `/gh-start 1`!
