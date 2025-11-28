@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { jwtService } from '../../services/auth/jwt.service';
 import { UnauthorizedError } from '../../utils/errors.util';
-import { AuthenticatedRequest, UserRole } from '../../types';
+import { AuthenticatedRequest } from '../../types';
 
 export class AuthMiddleware {
-  authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  authenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
     try {
       // Get token from Authorization header
       const authHeader = req.headers.authorization;
@@ -27,7 +27,7 @@ export class AuthMiddleware {
     }
   }
 
-  optional(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  optional(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
     try {
       const authHeader = req.headers.authorization;
 

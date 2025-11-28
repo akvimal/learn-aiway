@@ -4,7 +4,6 @@ import { ResponseUtil } from '../../utils/response.util';
 import {
   registerSchema,
   loginSchema,
-  refreshTokenSchema,
   changePasswordSchema,
 } from '../validators/auth.validators';
 import { ValidationError } from '../../utils/errors.util';

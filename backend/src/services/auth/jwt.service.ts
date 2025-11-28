@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '../../config/env.config';
 import { JwtPayload, TokenPair } from '../../types';
 import { UnauthorizedError } from '../../utils/errors.util';
@@ -17,19 +17,19 @@ export class JwtService {
   }
 
   generateAccessToken(payload: JwtPayload): string {
-    return jwt.sign(payload, this.accessTokenSecret, {
-      expiresIn: this.accessTokenExpiration,
+    return jwt.sign(payload as object, this.accessTokenSecret, {
+      expiresIn: this.accessTokenExpiration as any,
       issuer: 'ai-learning-api',
       audience: 'ai-learning-client',
-    });
+    } as SignOptions);
   }
 
   generateRefreshToken(payload: JwtPayload): string {
-    return jwt.sign(payload, this.refreshTokenSecret, {
-      expiresIn: this.refreshTokenExpiration,
+    return jwt.sign(payload as object, this.refreshTokenSecret, {
+      expiresIn: this.refreshTokenExpiration as any,
       issuer: 'ai-learning-api',
       audience: 'ai-learning-client',
-    });
+    } as SignOptions);
   }
 
   generateTokenPair(payload: JwtPayload): TokenPair {
@@ -84,11 +84,11 @@ export class JwtService {
   }
 
   getTokenExpirationDate(token: string): Date | null {
-    const decoded = this.decodeToken(token);
+    const decoded = this.decodeToken(token) as any;
     if (!decoded || !decoded.exp) {
       return null;
     }
-    return new Date(decoded.exp * 1000);
+    return new Date((decoded.exp as number) * 1000);
   }
 }
 

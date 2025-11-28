@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserRole } from '../../types';
 
 export const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -11,7 +12,7 @@ export const registerSchema = z.object({
     .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character'),
   first_name: z.string().min(1, 'First name is required').max(100),
   last_name: z.string().min(1, 'Last name is required').max(100),
-  role: z.enum(['learner', 'instructor', 'admin']).optional(),
+  role: z.nativeEnum(UserRole).optional(),
 });
 
 export const loginSchema = z.object({
