@@ -4,6 +4,9 @@
   "description": "Utility scripts for AI-Assisted Learning Platform",
   "scripts": {
     "verify": "node verify-setup.js",
+    "verify-labels": "node verify-labels.js",
+    "test-labels": "node test-labels.js",
+    "create-labels": "node create-labels-only.js",
     "create-repo": "node create-repo.js",
     "import-jira": "node import-to-jira.js",
     "create-issues": "node create-github-issues.js",
