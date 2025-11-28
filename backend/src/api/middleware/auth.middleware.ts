@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { jwtService } from '../../services/auth/jwt.service';
-import { UnauthorizedError } from '../../utils/errors.util';
-import { AuthenticatedRequest } from '../../types';
+import { UnauthorizedError, ForbiddenError } from '../../utils/errors.util';
+import { AuthenticatedRequest, UserRole } from '../../types';
 
 export class AuthMiddleware {
   authenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
@@ -42,6 +42,74 @@ export class AuthMiddleware {
       // If token is invalid, just proceed without user
       next();
     }
+  }
+
+  /**
+   * Middleware to require specific roles
+   * Usage: authMiddleware.requireRole(UserRole.ADMIN, UserRole.INSTRUCTOR)
+   */
+  requireRole(...allowedRoles: UserRole[]) {
+    return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
+      try {
+        if (!req.user) {
+          throw new UnauthorizedError('Authentication required');
+        }
+
+        const userRole = req.user.role;
+
+        if (!allowedRoles.includes(userRole)) {
+          throw new ForbiddenError(
+            `Access denied. Required roles: ${allowedRoles.join(', ')}. Your role: ${userRole}`
+          );
+        }
+
+        next();
+      } catch (error) {
+        next(error);
+      }
+    };
+  }
+
+  /**
+   * Middleware to require admin role
+   * Usage: authMiddleware.requireAdmin()
+   */
+  requireAdmin() {
+    return this.requireRole(UserRole.ADMIN);
+  }
+
+  /**
+   * Middleware to require instructor or admin role
+   * Usage: authMiddleware.requireInstructorOrAdmin()
+   */
+  requireInstructorOrAdmin() {
+    return this.requireRole(UserRole.INSTRUCTOR, UserRole.ADMIN);
+  }
+
+  /**
+   * Middleware to check if user is the resource owner or admin
+   * Usage: authMiddleware.requireOwnerOrAdmin('userId')
+   */
+  requireOwnerOrAdmin(userIdParam: string = 'userId') {
+    return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
+      try {
+        if (!req.user) {
+          throw new UnauthorizedError('Authentication required');
+        }
+
+        const userId = req.params[userIdParam] || req.body[userIdParam];
+        const isOwner = req.user.userId === userId;
+        const isAdmin = req.user.role === UserRole.ADMIN;
+
+        if (!isOwner && !isAdmin) {
+          throw new ForbiddenError('You can only access your own resources');
+        }
+
+        next();
+      } catch (error) {
+        next(error);
+      }
+    };
   }
 }
 

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.config';
 import { logger } from './config/logger.config';
 import authRoutes from './api/routes/auth.routes';
+import adminRoutes from './api/routes/admin.routes';
 import profileRoutes from './api/routes/profile.routes';
 import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
 
@@ -55,6 +56,7 @@ export function createApp(): Application {
   // API routes
   const apiVersion = env.API_VERSION;
   app.use(`/api/${apiVersion}/auth`, authRoutes);
+  app.use(`/api/${apiVersion}/admin`, adminRoutes);
   app.use(`/api/${apiVersion}/profile`, profileRoutes);
 
   // 404 handler
