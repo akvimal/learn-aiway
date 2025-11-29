@@ -244,11 +244,11 @@ const App: React.FC = () => {
         }
       />
 
-      {/* AI Provider Routes */}
+      {/* AI Provider Routes - Designer (Instructor/Admin) Only */}
       <Route
         path="/ai/providers"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
             <AppLayout>
               <AIProviderManagement />
             </AppLayout>
@@ -258,7 +258,7 @@ const App: React.FC = () => {
       <Route
         path="/ai/chat"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
             <AppLayout>
               <div className="h-[calc(100vh-4rem)]">
                 <AIChat />

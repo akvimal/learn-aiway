@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, requireInstructorOrAdmin } from '../middleware/auth.middleware';
 import * as aiProviderController from '../controllers/aiProvider.controller';
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication AND instructor/admin role
+// AI features are for designers (instructors/admins) only, not learners
 router.use(authenticate);
+router.use(requireInstructorOrAdmin());
 
 // Provider management routes
 router.get('/providers', aiProviderController.getUserProviders);
