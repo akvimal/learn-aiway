@@ -283,6 +283,113 @@ export class QuizRepository {
   }
 
   /**
+   * Get user's performance by curriculum
+   */
+  async getCurriculumPerformance(userId: string, curriculumId: string): Promise<any> {
+    // Get all topics for the curriculum
+    const topicsResult = await database.query<any>(
+      `SELECT id, title FROM topics WHERE curriculum_id = $1 ORDER BY order_index`,
+      [curriculumId]
+    );
+
+    const topicPerformance = [];
+
+    for (const topic of topicsResult.rows) {
+      // Get quizzes for this topic
+      const quizzesResult = await database.query<any>(
+        `SELECT id, title, passing_score FROM quizzes WHERE topic_id = $1 AND is_published = true`,
+        [topic.id]
+      );
+
+      // Get user's attempts for each quiz
+      const topicQuizzes = [];
+      let totalAttempts = 0;
+      let passedAttempts = 0;
+      let totalScore = 0;
+      let completedQuizzes = 0;
+
+      for (const quiz of quizzesResult.rows) {
+        const attemptsResult = await database.query<any>(
+          `SELECT * FROM quiz_attempts
+           WHERE quiz_id = $1 AND user_id = $2 AND is_completed = true
+           ORDER BY started_at DESC`,
+          [quiz.id, userId]
+        );
+
+        if (attemptsResult.rows.length > 0) {
+          const bestAttempt = attemptsResult.rows.reduce((best, current) => {
+            return (current.score || 0) > (best.score || 0) ? current : best;
+          }, attemptsResult.rows[0]);
+
+          totalAttempts += attemptsResult.rows.length;
+          passedAttempts += attemptsResult.rows.filter(a => a.passed).length;
+          totalScore += parseFloat(bestAttempt.score || 0);
+          completedQuizzes++;
+
+          topicQuizzes.push({
+            quiz_id: quiz.id,
+            quiz_title: quiz.title,
+            passing_score: parseFloat(quiz.passing_score),
+            total_attempts: attemptsResult.rows.length,
+            best_score: parseFloat(bestAttempt.score || 0),
+            passed: bestAttempt.passed,
+            last_attempt: bestAttempt.started_at,
+          });
+        }
+      }
+
+      topicPerformance.push({
+        topic_id: topic.id,
+        topic_title: topic.title,
+        total_quizzes: quizzesResult.rows.length,
+        completed_quizzes: completedQuizzes,
+        total_attempts: totalAttempts,
+        passed_attempts: passedAttempts,
+        average_score: completedQuizzes > 0 ? totalScore / completedQuizzes : 0,
+        quizzes: topicQuizzes,
+      });
+    }
+
+    // Calculate overall curriculum stats
+    const overallStats = topicPerformance.reduce(
+      (acc, topic) => ({
+        total_topics: acc.total_topics + 1,
+        topics_with_quizzes: acc.topics_with_quizzes + (topic.total_quizzes > 0 ? 1 : 0),
+        topics_completed: acc.topics_completed + (topic.completed_quizzes === topic.total_quizzes && topic.total_quizzes > 0 ? 1 : 0),
+        total_quizzes: acc.total_quizzes + topic.total_quizzes,
+        completed_quizzes: acc.completed_quizzes + topic.completed_quizzes,
+        total_attempts: acc.total_attempts + topic.total_attempts,
+        passed_attempts: acc.passed_attempts + topic.passed_attempts,
+        total_score: acc.total_score + (topic.average_score * topic.completed_quizzes),
+      }),
+      {
+        total_topics: 0,
+        topics_with_quizzes: 0,
+        topics_completed: 0,
+        total_quizzes: 0,
+        completed_quizzes: 0,
+        total_attempts: 0,
+        passed_attempts: 0,
+        total_score: 0,
+      }
+    );
+
+    return {
+      curriculum_id: curriculumId,
+      overall: {
+        ...overallStats,
+        average_score: overallStats.completed_quizzes > 0
+          ? overallStats.total_score / overallStats.completed_quizzes
+          : 0,
+        completion_percentage: overallStats.total_quizzes > 0
+          ? (overallStats.completed_quizzes / overallStats.total_quizzes) * 100
+          : 0,
+      },
+      topics: topicPerformance,
+    };
+  }
+
+  /**
    * Get user's quiz history with all attempts
    */
   async getUserQuizHistory(userId: string): Promise<any[]> {

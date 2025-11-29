@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
+import { CurriculumPerformance } from './CurriculumPerformance';
 import type { CurriculumWithDetails, DifficultyLevel, Topic } from '../../types';
 
 export const CurriculumDetail: React.FC = () => {
@@ -269,6 +270,11 @@ export const CurriculumDetail: React.FC = () => {
             <p className="text-sm text-gray-600">Last accessed: {new Date(progress.last_accessed_at).toLocaleDateString()}</p>
           </div>
         )}
+
+        {/* Quiz Performance */}
+        <div className="mb-6">
+          <CurriculumPerformance curriculumId={curriculum.id} />
+        </div>
 
         {/* Topics */}
         <div className="mb-6">

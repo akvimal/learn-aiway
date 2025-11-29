@@ -35,6 +35,13 @@ router.get(
   quizController.getMyQuizHistory.bind(quizController)
 );
 
+// Get curriculum performance
+router.get(
+  '/curriculum/:curriculumId/performance',
+  authMiddleware.authenticate.bind(authMiddleware),
+  quizController.getCurriculumPerformance.bind(quizController)
+);
+
 // Get quiz by ID
 router.get(
   '/:id',

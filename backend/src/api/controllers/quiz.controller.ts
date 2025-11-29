@@ -290,6 +290,27 @@ class QuizController {
   }
 
   /**
+   * Get curriculum performance (quiz stats by topic)
+   * GET /api/v1/quizzes/curriculum/:curriculumId/performance
+   */
+  async getCurriculumPerformance(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { curriculumId } = req.params;
+
+      const performance = await quizRepository.getCurriculumPerformance(userId, curriculumId);
+
+      ResponseUtil.success(res, performance);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update quiz
    * PUT /api/v1/quizzes/:id
    */

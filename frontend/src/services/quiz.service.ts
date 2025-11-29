@@ -94,6 +94,14 @@ class QuizService {
     const response: any = await httpClient.get(`${this.BASE_URL}/my/history`);
     return response.data;
   }
+
+  /**
+   * Get curriculum performance (quiz stats by topic)
+   */
+  async getCurriculumPerformance(curriculumId: string): Promise<any> {
+    const response: any = await httpClient.get(`${this.BASE_URL}/curriculum/${curriculumId}/performance`);
+    return response.data;
+  }
 }
 
 export const quizService = new QuizService();
