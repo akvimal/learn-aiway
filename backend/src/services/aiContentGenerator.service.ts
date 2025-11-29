@@ -1,6 +1,6 @@
 import { database } from '../config/database.config';
 import { logger } from '../config/logger.config';
-import { aiProviderFactory } from './ai/aiProviderFactory';
+import { aiProviderFactory } from './ai/provider.factory';
 import type {
   AIChatMessage,
   AIChatCompletionRequest,
