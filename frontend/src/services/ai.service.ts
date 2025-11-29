@@ -96,6 +96,59 @@ class AIService {
       avg_latency: '0',
     };
   }
+
+  // Content Generation
+  async generateTopics(input: {
+    curriculumId: string;
+    curriculumTitle: string;
+    curriculumDescription: string;
+    difficultyLevel: string;
+    domain: string;
+    numTopics?: number;
+  }): Promise<{
+    topics: Array<{
+      title: string;
+      description: string;
+      suggestedContent?: string;
+      estimatedDurationMinutes?: number;
+    }>;
+  }> {
+    const response = await httpClient.post<
+      ApiResponse<{
+        topics: Array<{
+          title: string;
+          description: string;
+          suggestedContent?: string;
+          estimatedDurationMinutes?: number;
+        }>;
+      }>
+    >(`${this.basePath}/generate/topics`, input);
+    if (!response.data) {
+      throw new Error('Failed to generate topics');
+    }
+    return response.data;
+  }
+
+  async generateObjectives(input: {
+    topicId: string;
+    topicTitle: string;
+    topicDescription: string;
+    topicContent: string;
+    difficultyLevel: string;
+    numObjectives?: number;
+  }): Promise<{
+    objectives: string[];
+  }> {
+    const response = await httpClient.post<
+      ApiResponse<{
+        objectives: string[];
+      }>
+    >(`${this.basePath}/generate/objectives`, input);
+    if (!response.data) {
+      throw new Error('Failed to generate objectives');
+    }
+    return response.data;
+  }
 }
 
 export const aiService = new AIService();
