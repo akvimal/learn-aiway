@@ -4,6 +4,10 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UserManagement } from './components/admin/UserManagement';
+import { CurriculumBrowser } from './components/curriculum/CurriculumBrowser';
+import { CurriculumDetail } from './components/curriculum/CurriculumDetail';
+import { TopicNavigation } from './components/curriculum/TopicNavigation';
+import { CurriculumEditor } from './components/curriculum/CurriculumEditor';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
 
@@ -233,7 +237,52 @@ const App: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Curriculum Routes */}
+      <Route
+        path="/curricula"
+        element={
+          <ProtectedRoute>
+            <CurriculumBrowser />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/curricula/:id"
+        element={
+          <ProtectedRoute>
+            <CurriculumDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/curricula/:id/learn"
+        element={
+          <ProtectedRoute>
+            <TopicNavigation />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Instructor Routes */}
+      <Route
+        path="/instructor/curricula/new"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <CurriculumEditor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/curricula/edit/:id"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <CurriculumEditor />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/" element={<Navigate to="/curricula" replace />} />
     </Routes>
   );
 };

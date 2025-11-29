@@ -86,3 +86,156 @@ export interface UpdateRoleInput {
 export interface UpdateStatusInput {
   is_active: boolean;
 }
+
+// Curriculum Management Types
+export enum DifficultyLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+}
+
+export enum TopicStatus {
+  NOT_STARTED = 'not_started',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+}
+
+export interface Curriculum {
+  id: string;
+  title: string;
+  description: string | null;
+  domain: string;
+  difficulty_level: DifficultyLevel;
+  created_by: string;
+  is_published: boolean;
+  estimated_duration_hours: number | null;
+  tags: string[] | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Topic {
+  id: string;
+  curriculum_id: string;
+  parent_topic_id: string | null;
+  title: string;
+  description: string | null;
+  content: string | null;
+  order_index: number;
+  estimated_duration_minutes: number | null;
+  is_required: boolean;
+  created_at: string;
+  updated_at: string;
+  children?: Topic[];
+  learning_objectives?: LearningObjective[];
+}
+
+export interface LearningObjective {
+  id: string;
+  topic_id: string;
+  objective_text: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurriculumWithDetails {
+  curriculum: Curriculum;
+  topics: Topic[];
+  progress: UserCurriculumProgress | null;
+}
+
+export interface UserCurriculumProgress {
+  id: string;
+  user_id: string;
+  curriculum_id: string;
+  current_topic_id: string | null;
+  completed_at: string | null;
+  last_accessed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserTopicProgress {
+  id: string;
+  user_id: string;
+  topic_id: string;
+  status: TopicStatus;
+  time_spent_minutes: number;
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurriculumStats {
+  totalTopics: number;
+  completedTopics: number;
+  inProgressTopics: number;
+  notStartedTopics: number;
+}
+
+export interface CurriculumCreateInput {
+  title: string;
+  description?: string;
+  domain: string;
+  difficulty_level: DifficultyLevel;
+  estimated_duration_hours?: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface CurriculumUpdateInput {
+  title?: string;
+  description?: string;
+  domain?: string;
+  difficulty_level?: DifficultyLevel;
+  estimated_duration_hours?: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface TopicCreateInput {
+  parent_topic_id?: string;
+  title: string;
+  description?: string;
+  content?: string;
+  order_index?: number;
+  estimated_duration_minutes?: number;
+  is_required?: boolean;
+}
+
+export interface TopicUpdateInput {
+  parent_topic_id?: string;
+  title?: string;
+  description?: string;
+  content?: string;
+  order_index?: number;
+  estimated_duration_minutes?: number;
+  is_required?: boolean;
+}
+
+export interface LearningObjectiveCreateInput {
+  objective_text: string;
+  order_index?: number;
+}
+
+export interface LearningObjectiveUpdateInput {
+  objective_text?: string;
+  order_index?: number;
+}
+
+export interface CurriculaListResponse {
+  curricula: Curriculum[];
+  pagination: PaginationMeta;
+}
+
+export interface CurriculumFilters {
+  page?: number;
+  limit?: number;
+  domain?: string;
+  difficulty_level?: DifficultyLevel;
+  is_published?: boolean;
+  search?: string;
+}

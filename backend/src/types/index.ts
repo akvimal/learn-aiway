@@ -102,3 +102,131 @@ export interface UserPreferencesUpdateInput {
   timezone?: string;
   language?: string;
 }
+
+// Curriculum Management Types
+
+export enum DifficultyLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+}
+
+export enum TopicStatus {
+  NOT_STARTED = 'not_started',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+}
+
+export interface Curriculum {
+  id: string;
+  title: string;
+  description: string | null;
+  domain: string;
+  difficulty_level: DifficultyLevel;
+  created_by: string;
+  is_published: boolean;
+  estimated_duration_hours: number | null;
+  tags: string[] | null;
+  metadata: Record<string, any> | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CurriculumCreateInput {
+  title: string;
+  description?: string;
+  domain: string;
+  difficulty_level: DifficultyLevel;
+  estimated_duration_hours?: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface CurriculumUpdateInput {
+  title?: string;
+  description?: string;
+  domain?: string;
+  difficulty_level?: DifficultyLevel;
+  is_published?: boolean;
+  estimated_duration_hours?: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface Topic {
+  id: string;
+  curriculum_id: string;
+  parent_topic_id: string | null;
+  title: string;
+  description: string | null;
+  content: string | null;
+  order_index: number;
+  estimated_duration_minutes: number | null;
+  is_required: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TopicCreateInput {
+  curriculum_id: string;
+  parent_topic_id?: string | null;
+  title: string;
+  description?: string;
+  content?: string;
+  order_index: number;
+  estimated_duration_minutes?: number;
+  is_required?: boolean;
+}
+
+export interface TopicUpdateInput {
+  title?: string;
+  description?: string;
+  content?: string;
+  order_index?: number;
+  estimated_duration_minutes?: number;
+  is_required?: boolean;
+}
+
+export interface LearningObjective {
+  id: string;
+  topic_id: string;
+  objective_text: string;
+  order_index: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface LearningObjectiveCreateInput {
+  topic_id: string;
+  objective_text: string;
+  order_index: number;
+}
+
+export interface UserCurriculumProgress {
+  id: string;
+  user_id: string;
+  curriculum_id: string;
+  current_topic_id: string | null;
+  completion_percentage: number;
+  started_at: Date;
+  last_accessed_at: Date;
+  completed_at: Date | null;
+}
+
+export interface UserTopicProgress {
+  id: string;
+  user_id: string;
+  topic_id: string;
+  status: TopicStatus;
+  time_spent_minutes: number;
+  notes: string | null;
+  completed_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface UserTopicProgressUpdateInput {
+  status?: TopicStatus;
+  time_spent_minutes?: number;
+  notes?: string;
+}
