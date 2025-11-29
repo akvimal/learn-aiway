@@ -68,6 +68,72 @@ export const TopicNavigation: React.FC = () => {
     setCurrentTopicIndex(index);
   };
 
+  const renderContent = (content: string) => {
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(content);
+
+      // If it's an object with numbered keys (like {"1. ...": "", "2. ...": ""})
+      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const entries = Object.entries(parsed);
+
+        // Check if all keys look like list items
+        const isListFormat = entries.every(([key]) => /^\d+\./.test(key));
+
+        if (isListFormat) {
+          return (
+            <div className="bg-gray-50 rounded-lg p-6">
+              <ul className="space-y-3">
+                {entries.map(([key, value]) => (
+                  <li key={key} className="flex items-start gap-3">
+                    <span className="font-semibold text-blue-600 min-w-fit">{key}</span>
+                    <span className="text-gray-700">{String(value)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        }
+
+        // Otherwise render as key-value pairs
+        return (
+          <div className="bg-gray-50 rounded-lg p-6">
+            <dl className="space-y-3">
+              {entries.map(([key, value]) => (
+                <div key={key}>
+                  <dt className="font-semibold text-gray-900">{key}</dt>
+                  <dd className="text-gray-700 mt-1">{String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        );
+      }
+
+      // If it's an array
+      if (Array.isArray(parsed)) {
+        return (
+          <div className="bg-gray-50 rounded-lg p-6">
+            <ul className="list-disc list-inside space-y-2">
+              {parsed.map((item, index) => (
+                <li key={index} className="text-gray-700">{String(item)}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+    } catch (e) {
+      // Not JSON, render as normal text
+    }
+
+    // Default: render as text with whitespace preserved
+    return (
+      <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+        {content}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex justify-center items-center">
@@ -256,9 +322,7 @@ export const TopicNavigation: React.FC = () => {
               {/* Topic Content */}
               {currentTopic.content && (
                 <div className="prose max-w-none mb-6">
-                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {currentTopic.content}
-                  </div>
+                  {renderContent(currentTopic.content)}
                 </div>
               )}
 
