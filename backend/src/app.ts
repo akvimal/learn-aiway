@@ -9,6 +9,7 @@ import adminRoutes from './api/routes/admin.routes';
 import profileRoutes from './api/routes/profile.routes';
 import curriculumRoutes from './api/routes/curriculum.routes';
 import aiProviderRoutes from './api/routes/aiProvider.routes';
+import aiContentGeneratorRoutes from './api/routes/aiContentGenerator.routes';
 import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
 
 export function createApp(): Application {
@@ -72,6 +73,7 @@ export function createApp(): Application {
   app.use(`/api/${apiVersion}/profile`, profileRoutes);
   app.use(`/api/${apiVersion}/curricula`, curriculumRoutes);
   app.use(`/api/${apiVersion}/ai`, aiProviderRoutes);
+  app.use(`/api/${apiVersion}/ai`, aiContentGeneratorRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
