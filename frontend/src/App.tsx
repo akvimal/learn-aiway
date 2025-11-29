@@ -8,6 +8,8 @@ import { CurriculumBrowser } from './components/curriculum/CurriculumBrowser';
 import { CurriculumDetail } from './components/curriculum/CurriculumDetail';
 import { TopicNavigation } from './components/curriculum/TopicNavigation';
 import { CurriculumEditor } from './components/curriculum/CurriculumEditor';
+import { AIProviderManagement } from './components/ai/AIProviderManagement';
+import { AIChat } from './components/ai/AIChat';
 import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
@@ -237,6 +239,30 @@ const App: React.FC = () => {
           <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
             <AppLayout>
               <CurriculumEditor />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* AI Provider Routes - Designer (Instructor/Admin) Only */}
+      <Route
+        path="/ai/providers"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <AIProviderManagement />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai/chat"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <div className="h-[calc(100vh-4rem)]">
+                <AIChat />
+              </div>
             </AppLayout>
           </ProtectedRoute>
         }
