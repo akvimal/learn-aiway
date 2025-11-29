@@ -8,6 +8,7 @@ import { CurriculumBrowser } from './components/curriculum/CurriculumBrowser';
 import { CurriculumDetail } from './components/curriculum/CurriculumDetail';
 import { TopicNavigation } from './components/curriculum/TopicNavigation';
 import { CurriculumEditor } from './components/curriculum/CurriculumEditor';
+import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
 
@@ -225,7 +226,9 @@ const App: React.FC = () => {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <AppLayout>
+              <Dashboard />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -233,7 +236,9 @@ const App: React.FC = () => {
         path="/admin"
         element={
           <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
-            <AdminDashboard />
+            <AppLayout>
+              <AdminDashboard />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -243,7 +248,9 @@ const App: React.FC = () => {
         path="/curricula"
         element={
           <ProtectedRoute>
-            <CurriculumBrowser />
+            <AppLayout>
+              <CurriculumBrowser />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -251,7 +258,9 @@ const App: React.FC = () => {
         path="/curricula/:id"
         element={
           <ProtectedRoute>
-            <CurriculumDetail />
+            <AppLayout>
+              <CurriculumDetail />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -269,7 +278,9 @@ const App: React.FC = () => {
         path="/instructor/curricula/new"
         element={
           <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
-            <CurriculumEditor />
+            <AppLayout>
+              <CurriculumEditor />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -277,7 +288,9 @@ const App: React.FC = () => {
         path="/instructor/curricula/edit/:id"
         element={
           <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
-            <CurriculumEditor />
+            <AppLayout>
+              <CurriculumEditor />
+            </AppLayout>
           </ProtectedRoute>
         }
       />

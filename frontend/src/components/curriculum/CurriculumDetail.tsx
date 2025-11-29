@@ -171,7 +171,7 @@ export const CurriculumDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+      <div className="flex justify-center items-center p-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -179,7 +179,7 @@ export const CurriculumDetail: React.FC = () => {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error || 'Curriculum not found'}</p>
@@ -198,7 +198,7 @@ export const CurriculumDetail: React.FC = () => {
   const { curriculum, topics, progress } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
         {/* Back button */}
         <button

@@ -17,14 +17,24 @@ export function createApp(): Application {
   app.use(helmet());
 
   // CORS configuration
-  const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim());
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
+        // In development, allow all localhost origins
+        if (env.NODE_ENV === 'development') {
+          if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+            callback(null, true);
+          } else {
+            callback(null, true); // Allow all in development
+          }
         } else {
-          callback(new Error('Not allowed by CORS'));
+          // In production, check against allowed origins
+          const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error('Not allowed by CORS'));
+          }
         }
       },
       credentials: true,

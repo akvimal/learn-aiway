@@ -35,7 +35,8 @@ class CurriculumService {
     const queryString = params.toString();
     const url = queryString ? `${this.BASE_URL}?${queryString}` : this.BASE_URL;
 
-    return httpClient.get(url);
+    const response: any = await httpClient.get(url);
+    return response.data;
   }
 
   /**
@@ -45,28 +46,32 @@ class CurriculumService {
     const url = includeProgress
       ? `${this.BASE_URL}/${id}?include_progress=true`
       : `${this.BASE_URL}/${id}`;
-    return httpClient.get(url);
+    const response: any = await httpClient.get(url);
+    return response.data;
   }
 
   /**
    * Get curricula by domain
    */
   async getCurriculaByDomain(domain: string): Promise<{ curricula: Curriculum[] }> {
-    return httpClient.get(`${this.BASE_URL}/domain/${domain}`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/domain/${domain}`);
+    return response.data;
   }
 
   /**
    * Search curricula
    */
   async searchCurricula(query: string): Promise<{ curricula: Curriculum[] }> {
-    return httpClient.get(`${this.BASE_URL}/search?q=${encodeURIComponent(query)}`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/search?q=${encodeURIComponent(query)}`);
+    return response.data;
   }
 
   /**
    * Get my curricula (created by current user)
    */
   async getMyCurricula(): Promise<{ curricula: Curriculum[] }> {
-    return httpClient.get(`${this.BASE_URL}/my`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/my`);
+    return response.data;
   }
 
   /**
@@ -75,56 +80,64 @@ class CurriculumService {
   async getMyProgress(): Promise<{
     progress: Array<UserCurriculumProgress & { curriculum: Curriculum; stats: CurriculumStats }>;
   }> {
-    return httpClient.get(`${this.BASE_URL}/progress`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/progress`);
+    return response.data;
   }
 
   /**
    * Get curriculum statistics
    */
   async getCurriculumStats(id: string): Promise<{ curriculumId: string; stats: CurriculumStats }> {
-    return httpClient.get(`${this.BASE_URL}/${id}/stats`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/${id}/stats`);
+    return response.data;
   }
 
   /**
    * Create a new curriculum
    */
   async createCurriculum(data: CurriculumCreateInput): Promise<{ curriculum: Curriculum }> {
-    return httpClient.post(this.BASE_URL, data);
+    const response: any = await httpClient.post(this.BASE_URL, data);
+    return response.data;
   }
 
   /**
    * Update a curriculum
    */
   async updateCurriculum(id: string, data: CurriculumUpdateInput): Promise<{ curriculum: Curriculum }> {
-    return httpClient.put(`${this.BASE_URL}/${id}`, data);
+    const response: any = await httpClient.put(`${this.BASE_URL}/${id}`, data);
+    return response.data;
   }
 
   /**
    * Delete a curriculum
    */
   async deleteCurriculum(id: string): Promise<{ message: string }> {
-    return httpClient.delete(`${this.BASE_URL}/${id}`);
+    const response: any = await httpClient.delete(`${this.BASE_URL}/${id}`);
+    return response.data;
   }
 
   /**
    * Publish a curriculum
    */
   async publishCurriculum(id: string): Promise<{ curriculum: Curriculum }> {
-    return httpClient.post(`${this.BASE_URL}/${id}/publish`);
+    const response: any = await httpClient.post(`${this.BASE_URL}/${id}/publish`);
+    return response.data;
   }
 
   /**
    * Unpublish a curriculum
    */
   async unpublishCurriculum(id: string): Promise<{ curriculum: Curriculum }> {
-    return httpClient.post(`${this.BASE_URL}/${id}/unpublish`);
+    const response: any = await httpClient.post(`${this.BASE_URL}/${id}/unpublish`);
+    return response.data;
   }
 
   /**
    * Add a topic to a curriculum
    */
   async addTopic(curriculumId: string, data: TopicCreateInput): Promise<{ topic: Topic }> {
-    return httpClient.post(`${this.BASE_URL}/${curriculumId}/topics`, data);
+    const response: any = await httpClient.post(`${this.BASE_URL}/${curriculumId}/topics`, data);
+    return response.data;
   }
 
   /**
@@ -135,14 +148,16 @@ class CurriculumService {
     topicId: string,
     data: TopicUpdateInput
   ): Promise<{ topic: Topic }> {
-    return httpClient.put(`${this.BASE_URL}/${curriculumId}/topics/${topicId}`, data);
+    const response: any = await httpClient.put(`${this.BASE_URL}/${curriculumId}/topics/${topicId}`, data);
+    return response.data;
   }
 
   /**
    * Delete a topic
    */
   async deleteTopic(curriculumId: string, topicId: string): Promise<{ message: string }> {
-    return httpClient.delete(`${this.BASE_URL}/${curriculumId}/topics/${topicId}`);
+    const response: any = await httpClient.delete(`${this.BASE_URL}/${curriculumId}/topics/${topicId}`);
+    return response.data;
   }
 
   /**
@@ -153,7 +168,8 @@ class CurriculumService {
     topicId: string,
     data: LearningObjectiveCreateInput
   ): Promise<{ objective: LearningObjective }> {
-    return httpClient.post(`${this.BASE_URL}/${curriculumId}/topics/${topicId}/objectives`, data);
+    const response: any = await httpClient.post(`${this.BASE_URL}/${curriculumId}/topics/${topicId}/objectives`, data);
+    return response.data;
   }
 
   /**
@@ -165,10 +181,11 @@ class CurriculumService {
     objectiveId: string,
     data: LearningObjectiveUpdateInput
   ): Promise<{ objective: LearningObjective }> {
-    return httpClient.put(
+    const response: any = await httpClient.put(
       `${this.BASE_URL}/${curriculumId}/topics/${topicId}/objectives/${objectiveId}`,
       data
     );
+    return response.data;
   }
 
   /**
@@ -179,9 +196,10 @@ class CurriculumService {
     topicId: string,
     objectiveId: string
   ): Promise<{ message: string }> {
-    return httpClient.delete(
+    const response: any = await httpClient.delete(
       `${this.BASE_URL}/${curriculumId}/topics/${topicId}/objectives/${objectiveId}`
     );
+    return response.data;
   }
 }
 
