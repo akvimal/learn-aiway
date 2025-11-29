@@ -25,7 +25,7 @@ export const useAuth = () => {
         if (user.role === UserRole.ADMIN) {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate('/curricula');
         }
       }
     },
@@ -40,7 +40,7 @@ export const useAuth = () => {
         if (user.role === UserRole.ADMIN) {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate('/curricula');
         }
       }
     },
