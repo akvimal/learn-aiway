@@ -46,3 +46,43 @@ export interface ApiResponse<T = any> {
     timestamp: string;
   };
 }
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  role?: UserRole;
+  search?: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface UsersListResponse {
+  users: User[];
+  pagination: PaginationMeta;
+}
+
+export interface UserStats {
+  total: number;
+  byRole: {
+    learner: number;
+    instructor: number;
+    admin: number;
+  };
+  active: number;
+  inactive: number;
+  emailVerified: number;
+  emailUnverified: number;
+}
+
+export interface UpdateRoleInput {
+  role: UserRole;
+}
+
+export interface UpdateStatusInput {
+  is_active: boolean;
+}

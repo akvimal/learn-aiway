@@ -1,8 +1,18 @@
 -- Migration: Create user_preferences table
 -- Description: Store user learning preferences and settings
 
-CREATE TYPE learning_pace AS ENUM ('slow', 'medium', 'fast');
-CREATE TYPE ai_model_preference AS ENUM ('gpt-4', 'gpt-3.5-turbo', 'claude-3', 'claude-2');
+-- Create enum types only if they don't exist
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'learning_pace') THEN
+    CREATE TYPE learning_pace AS ENUM ('slow', 'medium', 'fast');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_model_preference') THEN
+    CREATE TYPE ai_model_preference AS ENUM ('gpt-4', 'gpt-3.5-turbo', 'claude-3', 'claude-2');
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS user_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -19,9 +29,10 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 
 -- Trigger to update updated_at timestamp
+DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON user_preferences;
 CREATE TRIGGER update_user_preferences_updated_at
   BEFORE UPDATE ON user_preferences
   FOR EACH ROW
@@ -38,6 +49,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to automatically create default preferences when a new user is created
+DROP TRIGGER IF EXISTS create_user_preferences_on_user_creation ON users;
 CREATE TRIGGER create_user_preferences_on_user_creation
   AFTER INSERT ON users
   FOR EACH ROW
