@@ -11,6 +11,7 @@ import curriculumRoutes from './api/routes/curriculum.routes';
 import aiProviderRoutes from './api/routes/aiProvider.routes';
 import aiContentGeneratorRoutes from './api/routes/aiContentGenerator.routes';
 import codeExecutionRoutes from './api/routes/codeExecution.routes';
+import quizRoutes from './api/routes/quiz.routes';
 import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
 
 export function createApp(): Application {
@@ -76,6 +77,7 @@ export function createApp(): Application {
   app.use(`/api/${apiVersion}/ai`, aiProviderRoutes);
   app.use(`/api/${apiVersion}/ai`, aiContentGeneratorRoutes);
   app.use(`/api/${apiVersion}`, codeExecutionRoutes);
+  app.use(`/api/${apiVersion}/quizzes`, quizRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
