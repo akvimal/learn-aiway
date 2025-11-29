@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
-import type { CurriculumWithDetails, Topic } from '../../types';
+import { quizService } from '../../services/quiz.service';
+import type { CurriculumWithDetails, Topic, Quiz } from '../../types';
 
 export const TopicNavigation: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,12 +13,20 @@ export const TopicNavigation: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [topicQuizzes, setTopicQuizzes] = useState<Quiz[]>([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadCurriculum();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (flatTopics.length > 0 && flatTopics[currentTopicIndex]) {
+      loadTopicQuizzes(flatTopics[currentTopicIndex].id);
+    }
+  }, [currentTopicIndex, flatTopics]);
 
   const loadCurriculum = async () => {
     if (!id) return;
@@ -50,6 +59,20 @@ export const TopicNavigation: React.FC = () => {
     };
     flatten(topics);
     return result;
+  };
+
+  const loadTopicQuizzes = async (topicId: string) => {
+    try {
+      setLoadingQuizzes(true);
+      const response = await quizService.getQuizzesByTopic(topicId);
+      // Only show published quizzes to learners
+      setTopicQuizzes(response.quizzes.filter(q => q.is_published));
+    } catch (err: any) {
+      console.error('Failed to load quizzes:', err);
+      setTopicQuizzes([]);
+    } finally {
+      setLoadingQuizzes(false);
+    }
   };
 
   const goToNextTopic = () => {
@@ -366,6 +389,70 @@ export const TopicNavigation: React.FC = () => {
               {!currentTopic.content && (
                 <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
                   <p className="text-gray-600">Content coming soon...</p>
+                </div>
+              )}
+
+              {/* Quizzes Section */}
+              {topicQuizzes.length > 0 && (
+                <div className="mt-8 border-t border-gray-200 pt-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    Test Your Knowledge
+                  </h2>
+                  <div className="space-y-4">
+                    {topicQuizzes.map((quiz) => (
+                      <div
+                        key={quiz.id}
+                        className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              {quiz.title}
+                            </h3>
+                            {quiz.description && (
+                              <p className="text-sm text-gray-600 mb-3">{quiz.description}</p>
+                            )}
+                            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Passing Score: {quiz.passing_score}%
+                              </span>
+                              {quiz.time_limit_minutes && (
+                                <span className="flex items-center gap-1">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Time Limit: {quiz.time_limit_minutes} min
+                                </span>
+                              )}
+                              {quiz.generated_by_ai && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
+                                  AI Generated
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => navigate(`/quizzes/${quiz.id}`)}
+                            className="ml-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                          >
+                            Start Quiz
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {loadingQuizzes && (
+                <div className="mt-8 border-t border-gray-200 pt-6">
+                  <div className="text-center text-gray-500">Loading quizzes...</div>
                 </div>
               )}
             </div>
