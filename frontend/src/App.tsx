@@ -12,6 +12,9 @@ import { InstructorCurricula } from './components/curriculum/InstructorCurricula
 import { TopicManager } from './components/curriculum/TopicManager';
 import { AIProviderManagement } from './components/ai/AIProviderManagement';
 import { AIChat } from './components/ai/AIChat';
+import { QuizManager } from './components/quiz/QuizManager';
+import { QuizTaker } from './components/quiz/QuizTaker';
+import { QuizResults } from './components/quiz/QuizResults';
 import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
@@ -286,6 +289,39 @@ const App: React.FC = () => {
                 <AIChat />
               </div>
             </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Quiz Routes */}
+      {/* Instructor: Manage quizzes for a topic */}
+      <Route
+        path="/topics/:topicId/quizzes"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <QuizManager />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Learner: Take a quiz */}
+      <Route
+        path="/quizzes/:quizId"
+        element={
+          <ProtectedRoute>
+            <QuizTaker />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* View quiz attempt results */}
+      <Route
+        path="/quizzes/attempts/:attemptId/results"
+        element={
+          <ProtectedRoute>
+            <QuizResults />
           </ProtectedRoute>
         }
       />

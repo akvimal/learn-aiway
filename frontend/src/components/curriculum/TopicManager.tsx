@@ -31,12 +31,12 @@ export const TopicManager: React.FC = () => {
   const [topicRequired, setTopicRequired] = useState(true);
 
   // Learning objectives state
-  const [showObjectivesFor, setShowObjectivesFor] = useState<string | null>(null);
-  const [objectiveInput, setObjectiveInput] = useState('');
+  const [showObjectivesFor, setShowObjectivesFor] = useState<Set<string>>(new Set());
+  const [objectiveInput, setObjectiveInput] = useState<Record<string, string>>({});
 
   // AI generation state
   const [generatingTopics, setGeneratingTopics] = useState(false);
-  const [generatingObjectives, setGeneratingObjectives] = useState(false);
+  const [generatingObjectives, setGeneratingObjectives] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -129,8 +129,14 @@ export const TopicManager: React.FC = () => {
     if (!topic) return;
 
     try {
-      setGeneratingObjectives(true);
+      setGeneratingObjectives(topicId);
       setError(null);
+
+      // Delete existing objectives for this topic before generating new ones
+      const existingObjectives = topic.learning_objectives || [];
+      for (const obj of existingObjectives) {
+        await curriculumService.deleteLearningObjective(id, topicId, obj.id);
+      }
 
       const response = await aiService.generateObjectives({
         topicId,
@@ -142,7 +148,7 @@ export const TopicManager: React.FC = () => {
         numObjectives: 5,
       });
 
-      // Add objectives
+      // Add new objectives
       const objectives = response.objectives;
       for (let i = 0; i < objectives.length; i++) {
         await curriculumService.addLearningObjective(id, topicId, {
@@ -153,11 +159,11 @@ export const TopicManager: React.FC = () => {
 
       await loadData();
       setSuccessMessage(`Generated ${objectives.length} learning objectives!`);
-      setShowObjectivesFor(topicId);
+      setShowObjectivesFor((prev) => new Set(prev).add(topicId));
     } catch (err: any) {
       setError(err.message || 'Failed to generate objectives');
     } finally {
-      setGeneratingObjectives(false);
+      setGeneratingObjectives(null);
     }
   };
 
@@ -223,22 +229,37 @@ export const TopicManager: React.FC = () => {
   };
 
   const handleAddObjective = async (topicId: string) => {
-    if (!id || !objectiveInput) return;
+    const input = objectiveInput[topicId];
+    if (!id || !input) return;
 
     try {
       const topic = topics.find((t) => t.id === topicId);
       const currentObjectives = topic?.learning_objectives || [];
 
       await curriculumService.addLearningObjective(id, topicId, {
-        objective_text: objectiveInput,
+        objective_text: input,
         order_index: currentObjectives.length,
       });
 
       await loadData();
-      setObjectiveInput('');
+      setObjectiveInput((prev) => ({ ...prev, [topicId]: '' }));
       setSuccessMessage('Learning objective added');
     } catch (err: any) {
       setError(err.message || 'Failed to add objective');
+    }
+  };
+
+  const handleDeleteObjective = async (topicId: string, objectiveId: string) => {
+    if (!id || !window.confirm('Are you sure you want to delete this learning objective?')) {
+      return;
+    }
+
+    try {
+      await curriculumService.deleteLearningObjective(id, topicId, objectiveId);
+      await loadData();
+      setSuccessMessage('Learning objective deleted successfully');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete objective');
     }
   };
 
@@ -487,6 +508,25 @@ export const TopicManager: React.FC = () => {
         )}
 
         {/* Topics List */}
+        {topics.length > 0 && (
+          <div className="mb-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-900">Topics ({topics.length})</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowObjectivesFor(new Set(topics.map((t) => t.id)))}
+                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                Show All Objectives
+              </button>
+              <button
+                onClick={() => setShowObjectivesFor(new Set())}
+                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                Hide All Objectives
+              </button>
+            </div>
+          </div>
+        )}
         <div className="space-y-4">
           {topics.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -535,6 +575,12 @@ export const TopicManager: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => navigate(`/topics/${topic.id}/quizzes`)}
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    >
+                      Quizzes
+                    </button>
+                    <button
                       onClick={() => handleEditTopic(topic)}
                       className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                     >
@@ -552,50 +598,119 @@ export const TopicManager: React.FC = () => {
                 {/* Learning Objectives Section */}
                 <div className="mt-4 border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900">Learning Objectives</h4>
+                    <h4 className="font-semibold text-gray-900">
+                      Learning Objectives
+                      {topic.learning_objectives && topic.learning_objectives.length > 0 && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                          {topic.learning_objectives.length}
+                        </span>
+                      )}
+                    </h4>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleGenerateObjectives(topic.id)}
-                        disabled={generatingObjectives}
+                        disabled={generatingObjectives !== null}
                         className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
-                        Generate with AI
+                        {generatingObjectives === topic.id ? (
+                          <>
+                            <svg
+                              className="w-4 h-4 animate-spin"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            Generate with AI
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() =>
-                          setShowObjectivesFor(showObjectivesFor === topic.id ? null : topic.id)
+                          setShowObjectivesFor((prev) => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(topic.id)) {
+                              newSet.delete(topic.id);
+                            } else {
+                              newSet.add(topic.id);
+                            }
+                            return newSet;
+                          })
                         }
-                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 flex items-center gap-1"
                       >
-                        {showObjectivesFor === topic.id ? 'Hide' : 'Show'}
+                        {showObjectivesFor.has(topic.id) ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                            Hide
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                            Show
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
 
-                  {showObjectivesFor === topic.id && (
+                  {showObjectivesFor.has(topic.id) && (
                     <div className="space-y-2">
                       {topic.learning_objectives && topic.learning_objectives.length > 0 ? (
                         <ul className="space-y-2">
                           {topic.learning_objectives.map((obj) => (
                             <li
                               key={obj.id}
-                              className="flex items-start gap-2 text-sm bg-gray-50 p-3 rounded"
+                              className="flex items-start gap-2 text-sm bg-gray-50 p-3 rounded hover:bg-gray-100"
                             >
                               <span className="text-blue-600">•</span>
                               <span className="flex-1">{obj.objective_text}</span>
+                              <button
+                                onClick={() => handleDeleteObjective(topic.id, obj.id)}
+                                className="px-2 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded text-xs"
+                                title="Delete objective"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -606,8 +721,13 @@ export const TopicManager: React.FC = () => {
                       <div className="flex gap-2 mt-3">
                         <input
                           type="text"
-                          value={objectiveInput}
-                          onChange={(e) => setObjectiveInput(e.target.value)}
+                          value={objectiveInput[topic.id] || ''}
+                          onChange={(e) =>
+                            setObjectiveInput((prev) => ({
+                              ...prev,
+                              [topic.id]: e.target.value,
+                            }))
+                          }
                           onKeyPress={(e) =>
                             e.key === 'Enter' && handleAddObjective(topic.id)
                           }

@@ -337,3 +337,130 @@ export interface AIModelsResponse {
   configured: AIModel[];
   available: string[];
 }
+
+// Quiz Types
+export enum QuestionType {
+  MULTIPLE_CHOICE = 'multiple_choice',
+  TRUE_FALSE = 'true_false',
+  SHORT_ANSWER = 'short_answer',
+  ESSAY = 'essay',
+  CODE_REVIEW = 'code_review',
+}
+
+export interface Quiz {
+  id: string;
+  topic_id: string;
+  title: string;
+  description: string | null;
+  passing_score: number;
+  time_limit_minutes: number | null;
+  shuffle_questions: boolean;
+  show_answers_after_completion: boolean;
+  allow_retakes: boolean;
+  max_attempts: number | null;
+  is_published: boolean;
+  generated_by_ai: boolean;
+  ai_provider_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  quiz_id: string;
+  question_type: QuestionType;
+  question_text: string;
+  explanation: string | null;
+  points: number;
+  order_index: number;
+  generated_by_ai: boolean;
+  created_at: string;
+  options?: QuizQuestionOption[];
+}
+
+export interface QuizQuestionOption {
+  id: string;
+  question_id: string;
+  option_text: string;
+  is_correct: boolean;
+  explanation: string | null;
+  order_index: number;
+  created_at: string;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  attempt_number: number;
+  started_at: string;
+  submitted_at: string | null;
+  time_taken_seconds: number | null;
+  score: number | null;
+  points_earned: number | null;
+  total_points: number | null;
+  passed: boolean | null;
+  is_completed: boolean;
+  created_at: string;
+}
+
+export interface QuizAttemptAnswer {
+  id: string;
+  attempt_id: string;
+  question_id: string;
+  selected_option_id: string | null;
+  text_answer: string | null;
+  is_correct: boolean | null;
+  points_earned: number;
+  ai_feedback: string | null;
+  answered_at: string;
+}
+
+export interface QuizGenerateInput {
+  topicId: string;
+  providerId: string;
+  numQuestions?: number;
+  title?: string;
+  passingScore?: number;
+}
+
+export interface QuizWithQuestions {
+  quiz: Quiz;
+  questions: QuizQuestion[];
+}
+
+export interface QuizAttemptWithAnswers {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  attempt_number: number;
+  started_at: string;
+  submitted_at: string | null;
+  time_taken_seconds: number | null;
+  score: number | null;
+  points_earned: number | null;
+  total_points: number | null;
+  passed: boolean | null;
+  is_completed: boolean;
+  created_at: string;
+  answers: Array<{
+    id: string;
+    attempt_id: string;
+    question_id: string;
+    selected_option_id: string | null;
+    text_answer: string | null;
+    is_correct: boolean | null;
+    points_earned: number;
+    question_text: string;
+    question_explanation: string | null;
+    option_text: string | null;
+    option_explanation: string | null;
+  }>;
+}
+
+export interface SubmitAnswerInput {
+  questionId: string;
+  selectedOptionId?: string;
+  textAnswer?: string;
+}
