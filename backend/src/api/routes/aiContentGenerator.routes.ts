@@ -15,4 +15,8 @@ router.post('/generate/exercise', aiContentGeneratorController.generateExercise)
 router.post('/generate/hints', aiContentGeneratorController.generateHints);
 router.post('/generate/test-cases', aiContentGeneratorController.generateTestCases);
 
+// Curriculum content generation
+router.post('/generate/topics', aiContentGeneratorController.generateTopics);
+router.post('/generate/objectives', aiContentGeneratorController.generateObjectives);
+
 export default router;

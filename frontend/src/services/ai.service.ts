@@ -104,6 +104,7 @@ class AIService {
     curriculumDescription: string;
     difficultyLevel: string;
     domain: string;
+    providerId: string;
     numTopics?: number;
   }): Promise<{
     topics: Array<{
@@ -135,6 +136,7 @@ class AIService {
     topicDescription: string;
     topicContent: string;
     difficultyLevel: string;
+    providerId: string;
     numObjectives?: number;
   }): Promise<{
     objectives: string[];

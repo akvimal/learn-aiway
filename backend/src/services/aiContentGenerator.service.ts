@@ -45,6 +45,24 @@ export interface GenerateTestCasesInput {
   numTestCases: number; // 5-10 test cases
 }
 
+export interface GenerateCurriculumTopicsInput {
+  curriculumId: string;
+  curriculumTitle: string;
+  curriculumDescription: string;
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
+  domain: string;
+  numTopics: number; // 3-10 topics
+}
+
+export interface GenerateLearningObjectivesInput {
+  topicId: string;
+  topicTitle: string;
+  topicDescription: string;
+  topicContent: string;
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
+  numObjectives: number; // 3-8 objectives
+}
+
 export class AIContentGeneratorService {
   /**
    * Generate a content variation for a topic (explanation, example, analogy, etc.)
@@ -321,6 +339,150 @@ Return as JSON array:
       return testCases;
     } catch (error) {
       logger.error('Failed to generate test cases', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate topics for a curriculum
+   */
+  async generateCurriculumTopics(
+    input: GenerateCurriculumTopicsInput,
+    userId: string,
+    providerId: string
+  ): Promise<Array<{
+    title: string;
+    description: string;
+    suggestedContent?: string;
+    estimatedDurationMinutes?: number;
+  }>> {
+    try {
+      const provider = await aiProviderFactory.getProvider(providerId, userId);
+
+      const prompt = `Generate ${input.numTopics} learning topics for a curriculum in the ${input.domain} domain.
+
+Curriculum Title: ${input.curriculumTitle}
+Curriculum Description: ${input.curriculumDescription}
+Difficulty Level: ${input.difficultyLevel}
+Domain: ${input.domain}
+
+Requirements:
+1. Each topic should build on previous ones (logical progression)
+2. Topics should be appropriate for ${input.difficultyLevel} level learners
+3. Each topic should have:
+   - title: Clear, concise title (3-8 words)
+   - description: What the topic covers (2-3 sentences)
+   - suggestedContent: Brief outline or key points to cover (optional)
+   - estimatedDurationMinutes: Estimated time to complete (15-120 minutes)
+
+Return as JSON array:
+[
+  {
+    "title": "Introduction to Variables",
+    "description": "Learn about variables, data types, and how to declare and use them in programming.",
+    "suggestedContent": "1. What are variables\n2. Variable declaration\n3. Common data types\n4. Variable naming conventions",
+    "estimatedDurationMinutes": 30
+  },
+  ...
+]`;
+
+      const messages: AIChatMessage[] = [
+        {
+          role: 'system',
+          content: 'You are an expert curriculum designer creating structured learning topics. Return valid JSON array only.',
+        },
+        { role: 'user', content: prompt },
+      ];
+
+      const response: AIChatCompletionResponse = await provider.sendChatCompletion({
+        messages,
+        temperature: 0.7,
+        max_tokens: 3000,
+      });
+
+      // Parse JSON array
+      const topics = this.parseJSONResponse(response.content);
+
+      if (!Array.isArray(topics)) {
+        throw new Error('AI did not return a valid topics array');
+      }
+
+      logger.info('Generated curriculum topics', {
+        curriculumId: input.curriculumId,
+        numTopics: topics.length,
+        domain: input.domain,
+      });
+
+      return topics;
+    } catch (error) {
+      logger.error('Failed to generate curriculum topics', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate learning objectives for a topic
+   */
+  async generateLearningObjectives(
+    input: GenerateLearningObjectivesInput,
+    userId: string,
+    providerId: string
+  ): Promise<string[]> {
+    try {
+      const provider = await aiProviderFactory.getProvider(providerId, userId);
+
+      const prompt = `Generate ${input.numObjectives} specific, measurable learning objectives for this topic.
+
+Topic Title: ${input.topicTitle}
+${input.topicDescription ? `Topic Description: ${input.topicDescription}` : ''}
+${input.topicContent ? `Topic Content:\n${input.topicContent}` : ''}
+Difficulty Level: ${input.difficultyLevel}
+
+Requirements:
+1. Use action verbs (understand, explain, implement, analyze, create, etc.)
+2. Make each objective specific and measurable
+3. Appropriate for ${input.difficultyLevel} level learners
+4. Focus on what learners will be able to DO after completing the topic
+5. Follow Bloom's Taxonomy principles
+6. Each objective should be 1-2 sentences
+
+Examples:
+- "Explain the difference between var, let, and const in JavaScript"
+- "Implement functions using arrow syntax and understand their scope behavior"
+- "Analyze code to identify and fix common variable scoping issues"
+
+Return as JSON array of strings:
+["Objective 1", "Objective 2", "Objective 3", ...]`;
+
+      const messages: AIChatMessage[] = [
+        {
+          role: 'system',
+          content: 'You are an expert instructional designer creating learning objectives using Bloom\'s Taxonomy. Return valid JSON array only.',
+        },
+        { role: 'user', content: prompt },
+      ];
+
+      const response: AIChatCompletionResponse = await provider.sendChatCompletion({
+        messages,
+        temperature: 0.6,
+        max_tokens: 1500,
+      });
+
+      // Parse JSON array
+      const objectives = this.parseJSONResponse(response.content);
+
+      if (!Array.isArray(objectives)) {
+        throw new Error('AI did not return a valid objectives array');
+      }
+
+      logger.info('Generated learning objectives', {
+        topicId: input.topicId,
+        numObjectives: objectives.length,
+      });
+
+      return objectives;
+    } catch (error) {
+      logger.error('Failed to generate learning objectives', error);
       throw error;
     }
   }

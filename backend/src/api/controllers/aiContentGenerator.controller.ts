@@ -225,3 +225,123 @@ export const generateTestCases = async (
     next(error);
   }
 };
+
+/**
+ * Generate topics for a curriculum
+ * POST /api/v1/ai/generate/topics
+ */
+export const generateTopics = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const {
+      curriculumId,
+      curriculumTitle,
+      curriculumDescription,
+      difficultyLevel,
+      domain,
+      providerId,
+      numTopics,
+    } = req.body;
+
+    // Validation
+    if (!curriculumId || !curriculumTitle || !curriculumDescription || !difficultyLevel || !domain) {
+      throw new BadRequestError('Missing required fields');
+    }
+
+    if (!providerId) {
+      throw new BadRequestError('providerId is required');
+    }
+
+    const validDifficultyLevels = ['beginner', 'intermediate', 'advanced'];
+    if (!validDifficultyLevels.includes(difficultyLevel)) {
+      throw new BadRequestError('Invalid difficulty level');
+    }
+
+    const topics = await aiContentGeneratorService.generateCurriculumTopics(
+      {
+        curriculumId,
+        curriculumTitle,
+        curriculumDescription,
+        difficultyLevel,
+        domain,
+        numTopics: numTopics || 5,
+      },
+      userId,
+      providerId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        topics,
+        count: topics.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Generate learning objectives for a topic
+ * POST /api/v1/ai/generate/objectives
+ */
+export const generateObjectives = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const {
+      topicId,
+      topicTitle,
+      topicDescription,
+      topicContent,
+      difficultyLevel,
+      providerId,
+      numObjectives,
+    } = req.body;
+
+    // Validation
+    if (!topicId || !topicTitle || !difficultyLevel) {
+      throw new BadRequestError('Missing required fields');
+    }
+
+    if (!providerId) {
+      throw new BadRequestError('providerId is required');
+    }
+
+    const validDifficultyLevels = ['beginner', 'intermediate', 'advanced'];
+    if (!validDifficultyLevels.includes(difficultyLevel)) {
+      throw new BadRequestError('Invalid difficulty level');
+    }
+
+    const objectives = await aiContentGeneratorService.generateLearningObjectives(
+      {
+        topicId,
+        topicTitle,
+        topicDescription: topicDescription || '',
+        topicContent: topicContent || '',
+        difficultyLevel,
+        numObjectives: numObjectives || 5,
+      },
+      userId,
+      providerId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        objectives,
+        count: objectives.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

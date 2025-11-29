@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
 import { aiService } from '../../services/ai.service';
-import type { Topic, Curriculum } from '../../types';
+import type { Topic, Curriculum, AIProvider } from '../../types';
 
 export const TopicManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +11,10 @@ export const TopicManager: React.FC = () => {
   // Curriculum state
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
+
+  // AI provider state
+  const [providers, setProviders] = useState<AIProvider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -36,6 +40,7 @@ export const TopicManager: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    loadProviders();
   }, [id]);
 
   const loadData = async () => {
@@ -53,8 +58,27 @@ export const TopicManager: React.FC = () => {
     }
   };
 
+  const loadProviders = async () => {
+    try {
+      const userProviders = await aiService.getUserProviders();
+      setProviders(userProviders);
+
+      // Auto-select if there's only one provider
+      if (userProviders.length === 1) {
+        setSelectedProviderId(userProviders[0].id);
+      }
+    } catch (err: any) {
+      console.error('Failed to load AI providers:', err);
+    }
+  };
+
   const handleGenerateTopics = async () => {
     if (!id || !curriculum) return;
+
+    if (!selectedProviderId) {
+      setError('Please select an AI provider first');
+      return;
+    }
 
     try {
       setGeneratingTopics(true);
@@ -66,6 +90,7 @@ export const TopicManager: React.FC = () => {
         curriculumDescription: curriculum.description || '',
         difficultyLevel: curriculum.difficulty_level,
         domain: curriculum.domain,
+        providerId: selectedProviderId,
         numTopics: 5,
       });
 
@@ -95,6 +120,11 @@ export const TopicManager: React.FC = () => {
   const handleGenerateObjectives = async (topicId: string) => {
     if (!id) return;
 
+    if (!selectedProviderId) {
+      setError('Please select an AI provider first');
+      return;
+    }
+
     const topic = topics.find((t) => t.id === topicId);
     if (!topic) return;
 
@@ -108,6 +138,7 @@ export const TopicManager: React.FC = () => {
         topicDescription: topic.description || '',
         topicContent: topic.content || '',
         difficultyLevel: curriculum?.difficulty_level || 'beginner',
+        providerId: selectedProviderId,
         numObjectives: 5,
       });
 
@@ -281,10 +312,48 @@ export const TopicManager: React.FC = () => {
         {/* AI Generation Options */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+
+          {/* AI Provider Selection */}
+          {providers.length > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                AI Provider
+              </label>
+              <select
+                value={selectedProviderId || ''}
+                onChange={(e) => setSelectedProviderId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Select a provider...</option>
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.provider_name} ({provider.provider_type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* No providers warning */}
+          {providers.length === 0 && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                No AI providers configured. Please{' '}
+                <a
+                  href="/ai/providers"
+                  className="underline font-medium hover:text-yellow-900"
+                >
+                  add an AI provider
+                </a>{' '}
+                to use AI generation features.
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={handleGenerateTopics}
-              disabled={generatingTopics || topics.length > 0}
+              disabled={generatingTopics || topics.length > 0 || !selectedProviderId || providers.length === 0}
               className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <svg
