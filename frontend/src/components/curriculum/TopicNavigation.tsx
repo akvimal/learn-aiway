@@ -69,13 +69,48 @@ export const TopicNavigation: React.FC = () => {
   };
 
   const renderContent = (content: string) => {
-    // Try to parse as JSON
+    // First, check if it's malformed JSON (keys without values like {"key1","key2"})
+    // This pattern matches: {" followed by text, followed by ", or }
+    const malformedObjectPattern = /^\{("[^"]+",?)+\}$/;
+    if (malformedObjectPattern.test(content.trim())) {
+      console.log('Detected malformed JSON object (keys only), converting to array');
+      try {
+        // Extract the quoted strings and create an array
+        const matches = content.match(/"([^"]+)"/g);
+        if (matches) {
+          const items = matches.map(m => m.replace(/"/g, ''));
+          console.log('Extracted items:', items);
+
+          return (
+            <div className="bg-gray-50 rounded-lg p-6">
+              <ul className="space-y-3">
+                {items.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        }
+      } catch (e) {
+        console.log('Failed to extract from malformed JSON:', e);
+      }
+    }
+
+    // Try to parse as valid JSON
     try {
+      console.log('Attempting to parse content:', content);
       const parsed = JSON.parse(content);
+      console.log('Successfully parsed:', parsed);
 
       // If it's an object with numbered keys (like {"1. ...": "", "2. ...": ""})
       if (typeof parsed === 'object' && !Array.isArray(parsed)) {
         const entries = Object.entries(parsed);
+        console.log('Processing as object, entries:', entries);
 
         // Check if all keys look like list items
         const isListFormat = entries.every(([key]) => /^\d+\./.test(key));
@@ -124,6 +159,8 @@ export const TopicNavigation: React.FC = () => {
       }
     } catch (e) {
       // Not JSON, render as normal text
+      console.log('Failed to parse as JSON, error:', e);
+      console.log('Rendering as plain text');
     }
 
     // Default: render as text with whitespace preserved
