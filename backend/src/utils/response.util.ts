@@ -42,3 +42,28 @@ export class ResponseUtil {
     return res.status(204).send();
   }
 }
+
+// Helper functions for use in controllers
+export function successResponse<T>(data: T): ApiResponse<T> {
+  return {
+    success: true,
+    data,
+    meta: {
+      timestamp: new Date().toISOString(),
+    },
+  };
+}
+
+export function errorResponse(message: string, code?: string, details?: any): ApiResponse {
+  return {
+    success: false,
+    error: {
+      message,
+      code,
+      details,
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+    },
+  };
+}

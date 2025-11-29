@@ -114,3 +114,11 @@ export class AuthMiddleware {
 }
 
 export const authMiddleware = new AuthMiddleware();
+
+// Export middleware functions for direct use
+export const authenticate = authMiddleware.authenticate.bind(authMiddleware);
+export const optional = authMiddleware.optional.bind(authMiddleware);
+export const requireRole = authMiddleware.requireRole.bind(authMiddleware);
+export const requireAdmin = authMiddleware.requireAdmin.bind(authMiddleware);
+export const requireInstructorOrAdmin = authMiddleware.requireInstructorOrAdmin.bind(authMiddleware);
+export const requireOwnerOrAdmin = authMiddleware.requireOwnerOrAdmin.bind(authMiddleware);

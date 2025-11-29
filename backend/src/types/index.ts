@@ -230,3 +230,125 @@ export interface UserTopicProgressUpdateInput {
   time_spent_minutes?: number;
   notes?: string;
 }
+
+// AI Model Integration Types
+
+export enum AIProviderType {
+  OPENAI = 'openai',
+  ANTHROPIC = 'anthropic',
+  OLLAMA = 'ollama',
+  LMSTUDIO = 'lmstudio',
+}
+
+export enum AIModelType {
+  CHAT = 'chat',
+  COMPLETION = 'completion',
+  EMBEDDING = 'embedding',
+}
+
+export interface AIProvider {
+  id: string;
+  user_id: string;
+  provider_type: AIProviderType;
+  provider_name: string;
+  api_key_encrypted: string | null;
+  api_endpoint: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  config_metadata: Record<string, any>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface AIProviderCreateInput {
+  provider_type: AIProviderType;
+  provider_name: string;
+  api_key?: string; // Plain text, will be encrypted
+  api_endpoint?: string;
+  is_default?: boolean;
+  config_metadata?: Record<string, any>;
+}
+
+export interface AIProviderUpdateInput {
+  provider_name?: string;
+  api_key?: string; // Plain text, will be encrypted
+  api_endpoint?: string;
+  is_active?: boolean;
+  is_default?: boolean;
+  config_metadata?: Record<string, any>;
+}
+
+export interface AIModel {
+  id: string;
+  provider_id: string;
+  model_id: string;
+  model_name: string;
+  model_type: AIModelType;
+  capabilities: Record<string, any>;
+  pricing_info: Record<string, any>;
+  max_tokens: number | null;
+  is_available: boolean;
+  is_default: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface AIModelCreateInput {
+  provider_id: string;
+  model_id: string;
+  model_name: string;
+  model_type: AIModelType;
+  capabilities?: Record<string, any>;
+  pricing_info?: Record<string, any>;
+  max_tokens?: number;
+  is_default?: boolean;
+}
+
+export interface AIUsageLog {
+  id: string;
+  user_id: string;
+  provider_id: string;
+  model_id: string;
+  session_id: string | null;
+  request_tokens: number;
+  response_tokens: number;
+  total_tokens: number;
+  latency_ms: number | null;
+  cost_usd: number | null;
+  error_message: string | null;
+  created_at: Date;
+}
+
+// AI Chat Completion Types
+
+export interface AIChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface AIChatCompletionRequest {
+  messages: AIChatMessage[];
+  model?: string; // Optional: use default if not specified
+  temperature?: number;
+  max_tokens?: number;
+  stream?: boolean;
+}
+
+export interface AIChatCompletionResponse {
+  content: string;
+  model: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  finish_reason: string;
+  latency_ms: number;
+}
+
+export interface AIProviderInterface {
+  sendChatCompletion(request: AIChatCompletionRequest): Promise<AIChatCompletionResponse>;
+  streamChatCompletion(request: AIChatCompletionRequest): AsyncIterable<string>;
+  testConnection(): Promise<boolean>;
+  getAvailableModels(): Promise<string[]>;
+}

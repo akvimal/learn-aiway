@@ -76,3 +76,6 @@ class Database {
 }
 
 export const database = new Database();
+
+// Export pool instance for direct use (for backwards compatibility)
+export const pool = (database as any).pool as Pool;
