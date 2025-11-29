@@ -15,6 +15,7 @@ import { AIChat } from './components/ai/AIChat';
 import { QuizManager } from './components/quiz/QuizManager';
 import { QuizTaker } from './components/quiz/QuizTaker';
 import { QuizResults } from './components/quiz/QuizResults';
+import { QuizHistory } from './components/quiz/QuizHistory';
 import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
@@ -322,6 +323,18 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <QuizResults />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* View quiz history */}
+      <Route
+        path="/my/quiz-history"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <QuizHistory />
+            </AppLayout>
           </ProtectedRoute>
         }
       />

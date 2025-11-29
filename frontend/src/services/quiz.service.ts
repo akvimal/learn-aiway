@@ -86,6 +86,14 @@ class QuizService {
     const response: any = await httpClient.get(`${this.BASE_URL}/attempts/${attemptId}`);
     return response.data;
   }
+
+  /**
+   * Get user's quiz history (all attempts)
+   */
+  async getMyQuizHistory(): Promise<{ history: any[] }> {
+    const response: any = await httpClient.get(`${this.BASE_URL}/my/history`);
+    return response.data;
+  }
 }
 
 export const quizService = new QuizService();

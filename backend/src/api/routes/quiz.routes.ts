@@ -28,6 +28,13 @@ router.get(
   quizController.getQuizzesByTopic.bind(quizController)
 );
 
+// Get user's quiz history
+router.get(
+  '/my/history',
+  authMiddleware.authenticate.bind(authMiddleware),
+  quizController.getMyQuizHistory.bind(quizController)
+);
+
 // Get quiz by ID
 router.get(
   '/:id',

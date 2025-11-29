@@ -283,6 +283,52 @@ export class QuizRepository {
   }
 
   /**
+   * Get user's quiz history with all attempts
+   */
+  async getUserQuizHistory(userId: string): Promise<any[]> {
+    const result = await database.query<any>(
+      `SELECT
+        qa.*,
+        q.title as quiz_title,
+        q.description as quiz_description,
+        q.passing_score,
+        t.title as topic_title,
+        t.id as topic_id,
+        c.title as curriculum_title,
+        c.id as curriculum_id
+      FROM quiz_attempts qa
+      JOIN quizzes q ON qa.quiz_id = q.id
+      JOIN topics t ON q.topic_id = t.id
+      JOIN curricula c ON t.curriculum_id = c.id
+      WHERE qa.user_id = $1
+      ORDER BY qa.started_at DESC`,
+      [userId]
+    );
+
+    return result.rows.map(row => ({
+      id: row.id,
+      quiz_id: row.quiz_id,
+      quiz_title: row.quiz_title,
+      quiz_description: row.quiz_description,
+      passing_score: parseFloat(row.passing_score),
+      topic_title: row.topic_title,
+      topic_id: row.topic_id,
+      curriculum_title: row.curriculum_title,
+      curriculum_id: row.curriculum_id,
+      attempt_number: row.attempt_number,
+      started_at: row.started_at,
+      submitted_at: row.submitted_at,
+      time_taken_seconds: row.time_taken_seconds,
+      score: row.score ? parseFloat(row.score) : null,
+      points_earned: row.points_earned ? parseFloat(row.points_earned) : null,
+      total_points: row.total_points ? parseFloat(row.total_points) : null,
+      passed: row.passed,
+      is_completed: row.is_completed,
+      created_at: row.created_at,
+    }));
+  }
+
+  /**
    * Get attempt with answers
    */
   async getAttemptWithAnswers(attemptId: string): Promise<any> {

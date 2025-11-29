@@ -270,6 +270,26 @@ class QuizController {
   }
 
   /**
+   * Get user's quiz history (all attempts)
+   * GET /api/v1/quizzes/my/history
+   */
+  async getMyQuizHistory(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+
+      const history = await quizRepository.getUserQuizHistory(userId);
+
+      ResponseUtil.success(res, { history });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update quiz
    * PUT /api/v1/quizzes/:id
    */
