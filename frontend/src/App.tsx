@@ -8,6 +8,7 @@ import { CurriculumBrowser } from './components/curriculum/CurriculumBrowser';
 import { CurriculumDetail } from './components/curriculum/CurriculumDetail';
 import { TopicNavigation } from './components/curriculum/TopicNavigation';
 import { CurriculumEditor } from './components/curriculum/CurriculumEditor';
+import { InstructorCurricula } from './components/curriculum/InstructorCurricula';
 import { AIProviderManagement } from './components/ai/AIProviderManagement';
 import { AIChat } from './components/ai/AIChat';
 import { AppLayout } from './components/layout/AppLayout';
@@ -223,6 +224,16 @@ const App: React.FC = () => {
       />
 
       {/* Instructor Routes */}
+      <Route
+        path="/instructor/curricula"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <InstructorCurricula />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/instructor/curricula/new"
         element={

@@ -218,28 +218,29 @@ export const CurriculumEditor: React.FC = () => {
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/instructor/curricula')}
+            className="mb-4 flex items-center text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Back to My Curricula
+          </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               {isEditMode ? 'Edit Curriculum' : 'Create New Curriculum'}
             </h1>
             <p className="text-gray-600 mt-1">
-              {isEditMode ? 'Update your curriculum details' : 'Build a new learning path'}
+              {isEditMode ? 'Update curriculum details and manage topics' : 'Build a new learning path'}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/instructor/curricula')}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
         </div>
 
         {/* Messages */}
