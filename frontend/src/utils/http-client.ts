@@ -8,7 +8,7 @@ class HttpClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 10000,
+      timeout: 120000, // 2 minutes - increased for AI chat responses
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',

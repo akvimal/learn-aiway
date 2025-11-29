@@ -239,3 +239,101 @@ export interface CurriculumFilters {
   is_published?: boolean;
   search?: string;
 }
+
+// AI Provider Types
+export enum AIProviderType {
+  OPENAI = 'openai',
+  ANTHROPIC = 'anthropic',
+  OLLAMA = 'ollama',
+  LMSTUDIO = 'lmstudio',
+}
+
+export enum AIModelType {
+  CHAT = 'chat',
+  COMPLETION = 'completion',
+  EMBEDDING = 'embedding',
+}
+
+export interface AIProvider {
+  id: string;
+  user_id: string;
+  provider_type: AIProviderType;
+  provider_name: string;
+  api_key_encrypted: string | null;
+  api_endpoint: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  config_metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIModel {
+  id: string;
+  provider_id: string;
+  model_id: string;
+  model_name: string;
+  model_type: AIModelType;
+  capabilities: Record<string, any>;
+  pricing_info: Record<string, any>;
+  max_tokens: number | null;
+  is_available: boolean;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIProviderCreateInput {
+  provider_type: AIProviderType;
+  provider_name: string;
+  api_key?: string;
+  api_endpoint?: string;
+  is_default?: boolean;
+  config_metadata?: Record<string, any>;
+}
+
+export interface AIProviderUpdateInput {
+  provider_name?: string;
+  api_key?: string;
+  api_endpoint?: string;
+  is_active?: boolean;
+  is_default?: boolean;
+  config_metadata?: Record<string, any>;
+}
+
+export interface AIChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface AIChatCompletionRequest {
+  model?: string;
+  messages: AIChatMessage[];
+  temperature?: number;
+  max_tokens?: number;
+  providerId?: string;
+}
+
+export interface AIChatCompletionResponse {
+  content: string;
+  model: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  finish_reason: string;
+  latency_ms: number;
+}
+
+export interface AIUsageStats {
+  total_requests: string;
+  total_tokens: string;
+  total_cost: number | null;
+  avg_latency: string;
+}
+
+export interface AIModelsResponse {
+  configured: AIModel[];
+  available: string[];
+}

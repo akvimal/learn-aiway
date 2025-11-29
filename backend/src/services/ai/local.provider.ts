@@ -48,50 +48,107 @@ export class LocalLLMProvider extends BaseAIProvider {
         content: msg.content,
       }));
 
-      // Use OpenAI-compatible API format
-      const response = await this.client.post('/v1/chat/completions', {
-        model: request.model || this.config.defaultModel || 'llama2',
-        messages,
-        temperature: request.temperature ?? 0.7,
-        max_tokens: request.max_tokens,
-        stream: false,
-      });
+      let response;
 
-      const latency = Date.now() - startTime;
+      if (this.providerType === 'ollama') {
+        // Use Ollama's native API format
+        const model = request.model || this.config.defaultModel;
+        if (!model) {
+          throw new Error('No model specified. Please configure a default model for this provider.');
+        }
 
-      const choice = response.data.choices[0];
-      if (!choice || !choice.message) {
-        throw new Error(`No response from ${this.providerName}`);
+        response = await this.client.post('/api/chat', {
+          model,
+          messages,
+          stream: false,
+          options: {
+            temperature: request.temperature ?? 0.7,
+            num_predict: request.max_tokens,
+          },
+        });
+
+        const latency = Date.now() - startTime;
+        const content = response.data.message?.content || '';
+
+        // Ollama native API format
+        const promptText = messages.map((m: any) => m.content).join(' ');
+        const promptTokens = response.data.prompt_eval_count || this.estimateTokens(promptText);
+        const completionTokens = response.data.eval_count || this.estimateTokens(content);
+
+        this.logInfo('sendChatCompletion', 'Completed successfully', {
+          model: response.data.model,
+          tokens: promptTokens + completionTokens,
+          latency_ms: latency,
+        });
+
+        return {
+          content,
+          model: response.data.model || model,
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            total_tokens: promptTokens + completionTokens,
+          },
+          finish_reason: response.data.done ? 'stop' : 'length',
+          latency_ms: latency,
+        };
+      } else {
+        // Use OpenAI-compatible API format for LM Studio
+        response = await this.client.post('/v1/chat/completions', {
+          model: request.model || this.config.defaultModel || 'local-model',
+          messages,
+          temperature: request.temperature ?? 0.7,
+          max_tokens: request.max_tokens,
+          stream: false,
+        });
+
+        const latency = Date.now() - startTime;
+
+        const choice = response.data.choices[0];
+        if (!choice || !choice.message) {
+          throw new Error(`No response from ${this.providerName}`);
+        }
+
+        // Local models may not provide token counts, estimate them
+        const promptText = messages.map((m: any) => m.content).join(' ');
+        const promptTokens = this.estimateTokens(promptText);
+        const completionTokens = this.estimateTokens(choice.message.content);
+
+        this.logInfo('sendChatCompletion', 'Completed successfully', {
+          model: response.data.model,
+          estimated_tokens: promptTokens + completionTokens,
+          latency_ms: latency,
+        });
+
+        return {
+          content: choice.message.content || '',
+          model: response.data.model || request.model || 'local-model',
+          usage: {
+            prompt_tokens: response.data.usage?.prompt_tokens || promptTokens,
+            completion_tokens: response.data.usage?.completion_tokens || completionTokens,
+            total_tokens:
+              response.data.usage?.total_tokens || promptTokens + completionTokens,
+          },
+          finish_reason: choice.finish_reason || 'stop',
+          latency_ms: latency,
+        };
       }
-
-      // Local models may not provide token counts, estimate them
-      const promptText = messages.map((m: any) => m.content).join(' ');
-      const promptTokens = this.estimateTokens(promptText);
-      const completionTokens = this.estimateTokens(choice.message.content);
-
-      this.logInfo('sendChatCompletion', 'Completed successfully', {
-        model: response.data.model,
-        estimated_tokens: promptTokens + completionTokens,
-        latency_ms: latency,
-      });
-
-      return {
-        content: choice.message.content || '',
-        model: response.data.model || request.model || 'local-model',
-        usage: {
-          prompt_tokens: response.data.usage?.prompt_tokens || promptTokens,
-          completion_tokens: response.data.usage?.completion_tokens || completionTokens,
-          total_tokens:
-            response.data.usage?.total_tokens || promptTokens + completionTokens,
-        },
-        finish_reason: choice.finish_reason || 'stop',
-        latency_ms: latency,
-      };
     } catch (error: any) {
       this.logError('sendChatCompletion', error);
-      throw new Error(
-        `${this.providerName} request failed: ${error.response?.data?.error || error.message}`
-      );
+
+      // Extract error message from various formats
+      let errorMessage = error.message;
+      if (error.response?.data) {
+        if (typeof error.response.data.error === 'string') {
+          errorMessage = error.response.data.error;
+        } else if (typeof error.response.data.error === 'object') {
+          errorMessage = error.response.data.error.message || JSON.stringify(error.response.data.error);
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      }
+
+      throw new Error(`${this.providerName} request failed: ${errorMessage}`);
     }
   }
 
@@ -106,19 +163,33 @@ export class LocalLLMProvider extends BaseAIProvider {
         content: msg.content,
       }));
 
-      const response = await this.client.post(
-        '/v1/chat/completions',
-        {
-          model: request.model || this.config.defaultModel || 'llama2',
-          messages,
-          temperature: request.temperature ?? 0.7,
-          max_tokens: request.max_tokens,
-          stream: true,
-        },
-        {
-          responseType: 'stream',
-        }
-      );
+      const model = request.model || this.config.defaultModel;
+      if (!model) {
+        throw new Error('No model specified. Please configure a default model for this provider.');
+      }
+
+      const endpoint = this.providerType === 'ollama' ? '/api/chat' : '/v1/chat/completions';
+      const payload = this.providerType === 'ollama'
+        ? {
+            model,
+            messages,
+            stream: true,
+            options: {
+              temperature: request.temperature ?? 0.7,
+              num_predict: request.max_tokens,
+            },
+          }
+        : {
+            model,
+            messages,
+            temperature: request.temperature ?? 0.7,
+            max_tokens: request.max_tokens,
+            stream: true,
+          };
+
+      const response = await this.client.post(endpoint, payload, {
+        responseType: 'stream',
+      });
 
       const stream = response.data;
       let buffer = '';
@@ -151,9 +222,20 @@ export class LocalLLMProvider extends BaseAIProvider {
       this.logInfo('streamChatCompletion', 'Stream completed successfully');
     } catch (error: any) {
       this.logError('streamChatCompletion', error);
-      throw new Error(
-        `${this.providerName} streaming failed: ${error.response?.data?.error || error.message}`
-      );
+
+      // Extract error message from various formats
+      let errorMessage = error.message;
+      if (error.response?.data) {
+        if (typeof error.response.data.error === 'string') {
+          errorMessage = error.response.data.error;
+        } else if (typeof error.response.data.error === 'object') {
+          errorMessage = error.response.data.error.message || JSON.stringify(error.response.data.error);
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      }
+
+      throw new Error(`${this.providerName} streaming failed: ${errorMessage}`);
     }
   }
 
@@ -180,11 +262,11 @@ export class LocalLLMProvider extends BaseAIProvider {
       let models: string[] = [];
 
       if (this.providerType === 'ollama') {
-        // Ollama API format
+        // Ollama API format - returns models with 'name' field
         const response = await this.client.get('/api/tags');
-        models = response.data.models?.map((m: any) => m.name) || [];
+        models = response.data.models?.map((m: any) => m.name || m.model) || [];
       } else {
-        // LM Studio uses OpenAI format
+        // LM Studio uses OpenAI format - returns models with 'id' field
         const response = await this.client.get('/v1/models');
         models = response.data.data?.map((m: any) => m.id) || [];
       }
@@ -193,9 +275,20 @@ export class LocalLLMProvider extends BaseAIProvider {
       return models;
     } catch (error: any) {
       this.logError('getAvailableModels', error);
-      throw new Error(
-        `Failed to fetch ${this.providerName} models: ${error.response?.data?.error || error.message}`
-      );
+
+      // Extract error message from various formats
+      let errorMessage = error.message;
+      if (error.response?.data) {
+        if (typeof error.response.data.error === 'string') {
+          errorMessage = error.response.data.error;
+        } else if (typeof error.response.data.error === 'object') {
+          errorMessage = error.response.data.error.message || JSON.stringify(error.response.data.error);
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      }
+
+      throw new Error(`Failed to fetch ${this.providerName} models: ${errorMessage}`);
     }
   }
 }

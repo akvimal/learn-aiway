@@ -20,3 +20,50 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Syntax highlighting code blocks */
+.prose pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.prose pre code {
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+}
+
+/* Ensure syntax highlighter scrolls horizontally */
+div[class*="language-"] {
+  overflow-x: auto !important;
+  max-width: 100%;
+}
+
+div[class*="language-"] pre {
+  overflow-x: auto !important;
+  white-space: pre !important;
+  word-wrap: normal !important;
+}
+
+/* Custom scrollbar for code blocks */
+.prose pre::-webkit-scrollbar,
+div[class*="language-"]::-webkit-scrollbar {
+  height: 8px;
+}
+
+.prose pre::-webkit-scrollbar-track,
+div[class*="language-"]::-webkit-scrollbar-track {
+  background: #1e1e1e;
+  border-radius: 4px;
+}
+
+.prose pre::-webkit-scrollbar-thumb,
+div[class*="language-"]::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+.prose pre::-webkit-scrollbar-thumb:hover,
+div[class*="language-"]::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}

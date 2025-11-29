@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS ai_providers (
 );
 
 -- Create unique index for default provider per user
-CREATE UNIQUE INDEX idx_unique_default_provider_per_user
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_default_provider_per_user
     ON ai_providers(user_id) WHERE is_default = true;
 
 -- AI Models table: Available models for each provider
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS ai_models (
 );
 
 -- Create unique index for default model per provider
-CREATE UNIQUE INDEX idx_unique_default_model_per_provider
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_default_model_per_provider
     ON ai_models(provider_id) WHERE is_default = true;
 
 -- AI Usage Log table: Track AI API usage for analytics and cost tracking
@@ -60,13 +60,13 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_ai_providers_user_id ON ai_providers(user_id);
-CREATE INDEX idx_ai_providers_user_active ON ai_providers(user_id, is_active) WHERE is_active = true;
-CREATE INDEX idx_ai_models_provider_id ON ai_models(provider_id);
-CREATE INDEX idx_ai_models_provider_available ON ai_models(provider_id, is_available) WHERE is_available = true;
-CREATE INDEX idx_ai_usage_logs_user_id ON ai_usage_logs(user_id);
-CREATE INDEX idx_ai_usage_logs_created_at ON ai_usage_logs(created_at);
-CREATE INDEX idx_ai_usage_logs_session_id ON ai_usage_logs(session_id) WHERE session_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ai_providers_user_id ON ai_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_providers_user_active ON ai_providers(user_id, is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_ai_models_provider_id ON ai_models(provider_id);
+CREATE INDEX IF NOT EXISTS idx_ai_models_provider_available ON ai_models(provider_id, is_available) WHERE is_available = true;
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_session_id ON ai_usage_logs(session_id) WHERE session_id IS NOT NULL;
 
 -- Create updated_at trigger function if not exists
 CREATE OR REPLACE FUNCTION update_updated_at_column()

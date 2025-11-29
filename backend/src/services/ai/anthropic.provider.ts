@@ -23,7 +23,7 @@ export class AnthropicProvider extends BaseAIProvider {
     this.client = new Anthropic({
       apiKey,
       baseURL: apiEndpoint || undefined,
-      timeout: config.timeout || 60000,
+      timeout: config.timeout || 120000, // 2 minutes for longer responses
       maxRetries: config.maxRetries || 2,
     });
   }

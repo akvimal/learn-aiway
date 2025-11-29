@@ -63,6 +63,14 @@ export const Navigation: React.FC = () => {
                 Browse Curricula
               </Link>
 
+              <Link to="/ai/chat" className={navLinkClass('/ai/chat')}>
+                AI Chat
+              </Link>
+
+              <Link to="/ai/providers" className={navLinkClass('/ai/providers')}>
+                AI Settings
+              </Link>
+
               {user?.role === UserRole.INSTRUCTOR || user?.role === UserRole.ADMIN ? (
                 <>
                   <Link to="/instructor/curricula/new" className={navLinkClass('/instructor')}>
@@ -156,6 +164,22 @@ export const Navigation: React.FC = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Browse Curricula
+            </Link>
+
+            <Link
+              to="/ai/chat"
+              className={mobileNavLinkClass('/ai/chat')}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              AI Chat
+            </Link>
+
+            <Link
+              to="/ai/providers"
+              className={mobileNavLinkClass('/ai/providers')}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              AI Settings
             </Link>
 
             {user?.role === UserRole.INSTRUCTOR || user?.role === UserRole.ADMIN ? (
