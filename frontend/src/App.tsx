@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { UserManagement } from './components/admin/UserManagement';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
 
@@ -107,6 +108,7 @@ const Dashboard: React.FC = () => {
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [activeView, setActiveView] = React.useState<'dashboard' | 'users'>('dashboard');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,22 +138,68 @@ const AdminDashboard: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin Dashboard</h2>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">
-                Admin Access
-              </h3>
-              <p className="text-sm text-red-700">
-                This is the admin dashboard. Only users with the 'admin' role can access this
-                page.
-              </p>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="flex gap-6">
+          {/* Sidebar Navigation */}
+          <aside className="w-64 bg-white shadow rounded-lg p-4 h-fit">
+            <nav className="space-y-2">
+              <button
+                onClick={() => setActiveView('dashboard')}
+                className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeView === 'dashboard'
+                    ? 'bg-blue-100 text-blue-900'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveView('users')}
+                className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeView === 'users'
+                    ? 'bg-blue-100 text-blue-900'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                User Management
+              </button>
+            </nav>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1">
+            {activeView === 'dashboard' && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin Dashboard</h2>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">
+                    Admin Access
+                  </h3>
+                  <p className="text-sm text-red-700 mb-4">
+                    This is the admin dashboard. Only users with the 'admin' role can access this
+                    page.
+                  </p>
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-red-900 mb-2">Available Features:</h4>
+                    <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                      <li>View and manage all users</li>
+                      <li>Update user roles (learner, instructor, admin)</li>
+                      <li>Activate or deactivate user accounts</li>
+                      <li>View user statistics</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeView === 'users' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">User Management</h2>
+                <UserManagement />
+              </div>
+            )}
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
