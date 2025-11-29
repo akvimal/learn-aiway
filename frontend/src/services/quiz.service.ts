@@ -32,7 +32,7 @@ class QuizService {
    * Get quizzes by topic
    */
   async getQuizzesByTopic(topicId: string): Promise<{ quizzes: Quiz[] }> {
-    const response: any = await httpClient.get(`/topics/${topicId}/quizzes`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/topic/${topicId}`);
     return response.data;
   }
 

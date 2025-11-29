@@ -21,6 +21,13 @@ router.post(
   quizController.createQuiz.bind(quizController)
 );
 
+// Get quizzes by topic ID
+router.get(
+  '/topic/:topicId',
+  authMiddleware.authenticate.bind(authMiddleware),
+  quizController.getQuizzesByTopic.bind(quizController)
+);
+
 // Get quiz by ID
 router.get(
   '/:id',
