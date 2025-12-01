@@ -719,11 +719,32 @@ export class CurriculumController {
         throw new ValidationError('Objective text is required');
       }
 
-      const objective = await learningObjectiveRepository.create({
-        topic_id: topicId,
-        objective_text,
-        order_index,
-      });
+      // If order_index is not provided or invalid, get the next available one
+      let finalOrderIndex = order_index;
+      if (finalOrderIndex === undefined || finalOrderIndex === null || finalOrderIndex < 0) {
+        finalOrderIndex = await learningObjectiveRepository.getNextOrderIndex(topicId);
+      }
+
+      let objective;
+      try {
+        objective = await learningObjectiveRepository.create({
+          topic_id: topicId,
+          objective_text,
+          order_index: finalOrderIndex,
+        });
+      } catch (error: any) {
+        // If duplicate key error, use next available order_index
+        if (error.code === '23505' && error.constraint === 'learning_objectives_order_unique') {
+          finalOrderIndex = await learningObjectiveRepository.getNextOrderIndex(topicId);
+          objective = await learningObjectiveRepository.create({
+            topic_id: topicId,
+            objective_text,
+            order_index: finalOrderIndex,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       logger.info('Added learning objective', {
         userId: req.user?.userId,
@@ -819,6 +840,59 @@ export class CurriculumController {
       });
 
       ResponseUtil.success(res, { message: 'Learning objective deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get topic with full details (objectives, exercises, quizzes)
+   * GET /api/v1/curricula/:curriculumId/topics/:topicId/details
+   */
+  async getTopicDetails(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { topicId } = req.params;
+
+      const topicDetails = await topicRepository.getTopicWithDetails(topicId);
+
+      if (!topicDetails) {
+        throw new NotFoundError('Topic not found');
+      }
+
+      logger.info('Retrieved topic details', {
+        userId: req.user?.userId,
+        topicId,
+      });
+
+      ResponseUtil.success(res, topicDetails);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get topic summary (for curriculum overview)
+   * GET /api/v1/topics/:topicId/summary
+   */
+  async getTopicSummary(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { topicId } = req.params;
+
+      const summary = await topicRepository.getTopicSummary(topicId);
+
+      if (!summary) {
+        throw new NotFoundError('Topic not found');
+      }
+
+      ResponseUtil.success(res, summary);
     } catch (error) {
       next(error);
     }

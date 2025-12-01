@@ -268,6 +268,61 @@ export class ExerciseRepository {
     );
     return result.rows.map(row => row.hint_id);
   }
+
+  /**
+   * Link exercise to learning objectives
+   */
+  async linkToObjectives(exerciseId: string, objectiveIds: string[]): Promise<void> {
+    // Remove existing links
+    await database.query(
+      'DELETE FROM exercise_objectives WHERE exercise_id = $1',
+      [exerciseId]
+    );
+
+    // Add new links
+    if (objectiveIds.length > 0) {
+      const values = objectiveIds.map((objId, index) =>
+        `($1, $${index + 2})`
+      ).join(', ');
+
+      await database.query(
+        `INSERT INTO exercise_objectives (exercise_id, objective_id)
+         VALUES ${values}
+         ON CONFLICT (exercise_id, objective_id) DO NOTHING`,
+        [exerciseId, ...objectiveIds]
+      );
+    }
+  }
+
+  /**
+   * Get learning objectives for an exercise
+   */
+  async getLinkedObjectives(exerciseId: string): Promise<any[]> {
+    const result = await database.query(
+      `SELECT lo.*
+       FROM learning_objectives lo
+       JOIN exercise_objectives eo ON lo.id = eo.objective_id
+       WHERE eo.exercise_id = $1
+       ORDER BY lo.order_index`,
+      [exerciseId]
+    );
+    return result.rows;
+  }
+
+  /**
+   * Get exercises for a specific learning objective
+   */
+  async findByObjectiveId(objectiveId: string): Promise<Exercise[]> {
+    const result = await database.query<any>(
+      `SELECT e.*
+       FROM exercises e
+       JOIN exercise_objectives eo ON e.id = eo.exercise_id
+       WHERE eo.objective_id = $1
+       ORDER BY e.order_index`,
+      [objectiveId]
+    );
+    return result.rows.map((row) => new Exercise(row));
+  }
 }
 
 export const exerciseRepository = new ExerciseRepository();

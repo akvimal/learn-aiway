@@ -107,6 +107,17 @@ export class LearningObjectiveRepository {
   }
 
   /**
+   * Get the next available order_index for a topic
+   */
+  async getNextOrderIndex(topicId: string): Promise<number> {
+    const result = await database.query<{ max: number | null }>(
+      'SELECT COALESCE(MAX(order_index), -1) + 1 as max FROM learning_objectives WHERE topic_id = $1',
+      [topicId]
+    );
+    return result.rows[0]?.max || 0;
+  }
+
+  /**
    * Create multiple learning objectives for a topic
    */
   async createMany(

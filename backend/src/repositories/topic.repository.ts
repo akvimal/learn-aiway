@@ -202,6 +202,98 @@ export class TopicRepository {
     );
     await Promise.all(updatePromises);
   }
+
+  /**
+   * Get topic with full details (learning objectives, exercises, quizzes)
+   */
+  async getTopicWithDetails(topicId: string, includeHiddenTests: boolean = false): Promise<any> {
+    const topic = await this.findById(topicId);
+    if (!topic) return null;
+
+    // Get learning objectives
+    const objectivesQuery = await database.query(
+      `SELECT * FROM learning_objectives
+       WHERE topic_id = $1
+       ORDER BY order_index ASC`,
+      [topicId]
+    );
+
+    // Get exercises
+    const exercisesQuery = await database.query(
+      `SELECT id, title, description, instructions, language, difficulty_level,
+              starter_code, points, time_limit_seconds, is_published, order_index, created_at
+       FROM exercises
+       WHERE topic_id = $1
+       ORDER BY order_index ASC`,
+      [topicId]
+    );
+
+    // Get quizzes (if they exist)
+    const quizzesQuery = await database.query(
+      `SELECT id, title, description, difficulty_level, time_limit_minutes,
+              passing_score, is_published, order_index, created_at
+       FROM quizzes
+       WHERE topic_id = $1
+       ORDER BY order_index ASC`,
+      [topicId]
+    );
+
+    // For each exercise, get test case count
+    const exercisesWithDetails = await Promise.all(
+      exercisesQuery.rows.map(async (exercise) => {
+        const testCaseQuery = await database.query(
+          `SELECT COUNT(*) as total_tests,
+                  COUNT(*) FILTER (WHERE is_hidden = false) as public_tests
+           FROM exercise_test_cases
+           WHERE exercise_id = $1`,
+          [exercise.id]
+        );
+
+        const hints = await database.query(
+          `SELECT COUNT(*) as hint_count FROM exercise_hints WHERE exercise_id = $1`,
+          [exercise.id]
+        );
+
+        return {
+          ...exercise,
+          total_tests: parseInt(testCaseQuery.rows[0].total_tests, 10),
+          public_tests: parseInt(testCaseQuery.rows[0].public_tests, 10),
+          hint_count: parseInt(hints.rows[0].hint_count, 10),
+        };
+      })
+    );
+
+    return {
+      ...topic.toJSON(),
+      learning_objectives: objectivesQuery.rows,
+      exercises: exercisesWithDetails,
+      quizzes: quizzesQuery.rows,
+    };
+  }
+
+  /**
+   * Get topic summary with counts (for curriculum overview)
+   */
+  async getTopicSummary(topicId: string): Promise<any> {
+    const topic = await this.findById(topicId);
+    if (!topic) return null;
+
+    const countsQuery = await database.query(
+      `SELECT
+        (SELECT COUNT(*) FROM learning_objectives WHERE topic_id = $1) as objective_count,
+        (SELECT COUNT(*) FROM exercises WHERE topic_id = $1 AND is_published = true) as exercise_count,
+        (SELECT COUNT(*) FROM quizzes WHERE topic_id = $1 AND is_published = true) as quiz_count
+      `,
+      [topicId]
+    );
+
+    return {
+      ...topic.toJSON(),
+      objective_count: parseInt(countsQuery.rows[0].objective_count, 10),
+      exercise_count: parseInt(countsQuery.rows[0].exercise_count, 10),
+      quiz_count: parseInt(countsQuery.rows[0].quiz_count, 10),
+    };
+  }
 }
 
 export const topicRepository = new TopicRepository();

@@ -201,6 +201,24 @@ class CurriculumService {
     );
     return response.data;
   }
+
+  /**
+   * Get topic details with exercises and quizzes
+   */
+  async getTopicDetails(curriculumId: string, topicId: string): Promise<any> {
+    const response: any = await httpClient.get(
+      `${this.BASE_URL}/${curriculumId}/topics/${topicId}/details`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get topic summary with counts
+   */
+  async getTopicSummary(topicId: string): Promise<any> {
+    const response: any = await httpClient.get(`/topics/${topicId}/summary`);
+    return response.data;
+  }
 }
 
 export const curriculumService = new CurriculumService();

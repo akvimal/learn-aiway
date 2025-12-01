@@ -179,6 +179,26 @@ router.delete(
   curriculumController.deleteTopic.bind(curriculumController)
 );
 
+/**
+ * @route   GET /api/v1/curricula/:curriculumId/topics/:topicId/details
+ * @desc    Get topic with full details (objectives, exercises, quizzes)
+ * @access  Public
+ */
+router.get(
+  '/:curriculumId/topics/:topicId/details',
+  curriculumController.getTopicDetails.bind(curriculumController)
+);
+
+/**
+ * @route   GET /api/v1/topics/:topicId/summary
+ * @desc    Get topic summary with counts
+ * @access  Public
+ */
+router.get(
+  '/topics/:topicId/summary',
+  curriculumController.getTopicSummary.bind(curriculumController)
+);
+
 // ============================================================================
 // Learning Objective Management Routes
 // ============================================================================

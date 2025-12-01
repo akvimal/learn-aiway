@@ -1,0 +1,186 @@
+{
+  "createExercise": {
+    "endpoint": "POST /api/v1/topics/:topicId/exercises",
+    "description": "Create a new coding exercise for a topic",
+    "headers": {
+      "Authorization": "Bearer <your-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "title": "Create a Sum Function",
+      "description": "Write a function that adds two numbers together",
+      "instructions": "Create a function called 'sum' that takes two parameters (a and b) and returns their sum.\n\nExample:\nsum(2, 3) should return 5\nsum(-1, 1) should return 0",
+      "language": "javascript",
+      "difficultyLevel": "beginner",
+      "starterCode": "function sum(a, b) {\n  // Your code here\n}",
+      "solutionCode": "function sum(a, b) {\n  return a + b;\n}",
+      "explanation": "The sum function uses the addition operator (+) to add two numbers and return the result.",
+      "points": 10,
+      "timeLimitSeconds": 300,
+      "isPublished": true
+    }
+  },
+  "addTestCase": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/test-cases",
+    "description": "Add a test case to an exercise",
+    "headers": {
+      "Authorization": "Bearer <your-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "testName": "Test basic addition",
+      "testType": "public",
+      "inputData": {
+        "args": [2, 3]
+      },
+      "expectedOutput": {
+        "result": 5
+      },
+      "points": 2,
+      "isHidden": false,
+      "orderIndex": 0
+    }
+  },
+  "addHiddenTestCase": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/test-cases",
+    "description": "Add a hidden test case (only visible to instructors)",
+    "body": {
+      "testName": "Test negative numbers",
+      "testType": "edge_case",
+      "inputData": {
+        "args": [-5, -3]
+      },
+      "expectedOutput": {
+        "result": -8
+      },
+      "points": 3,
+      "isHidden": true,
+      "orderIndex": 1
+    }
+  },
+  "addHint": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/hints",
+    "description": "Add a hint to help learners",
+    "headers": {
+      "Authorization": "Bearer <your-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "hintLevel": 1,
+      "hintText": "Think about using the + operator to add the two parameters together.",
+      "revealsSolution": false
+    }
+  },
+  "addSolutionHint": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/hints",
+    "description": "Add a hint that reveals the solution",
+    "body": {
+      "hintLevel": 2,
+      "hintText": "You can solve this by returning a + b in the function body.",
+      "revealsSolution": true
+    }
+  },
+  "linkToObjectives": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/objectives",
+    "description": "Link an exercise to specific learning objectives",
+    "headers": {
+      "Authorization": "Bearer <your-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "objectiveIds": [
+        "uuid-of-objective-1",
+        "uuid-of-objective-2"
+      ]
+    }
+  },
+  "getTopicDetails": {
+    "endpoint": "GET /api/v1/curricula/:curriculumId/topics/:topicId/details",
+    "description": "Get topic with all details (objectives, exercises, quizzes)",
+    "headers": {
+      "Authorization": "Bearer <your-token>"
+    },
+    "response_example": {
+      "success": true,
+      "data": {
+        "id": "topic-uuid",
+        "title": "Introduction to Functions",
+        "description": "Learn about functions in JavaScript",
+        "content": "Functions are reusable blocks of code...",
+        "learning_objectives": [
+          {
+            "id": "obj-uuid-1",
+            "objective_text": "Understand function syntax",
+            "order_index": 0
+          }
+        ],
+        "exercises": [
+          {
+            "id": "exercise-uuid-1",
+            "title": "Create a Sum Function",
+            "description": "Write a function that adds two numbers",
+            "language": "javascript",
+            "difficulty_level": "beginner",
+            "starter_code": "function sum(a, b) { }",
+            "points": 10,
+            "total_tests": 5,
+            "public_tests": 3,
+            "hint_count": 2
+          }
+        ],
+        "quizzes": []
+      }
+    }
+  },
+  "requestHint": {
+    "endpoint": "POST /api/v1/exercises/:exerciseId/hints/:hintLevel/request",
+    "description": "Request a hint for an exercise (learner endpoint, tracks usage)",
+    "headers": {
+      "Authorization": "Bearer <your-token>"
+    },
+    "example": "POST /api/v1/exercises/abc-123/hints/1/request"
+  },
+  "updateExercise": {
+    "endpoint": "PATCH /api/v1/exercises/:exerciseId",
+    "description": "Update exercise details",
+    "headers": {
+      "Authorization": "Bearer <your-token>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "title": "Updated Title",
+      "description": "Updated description",
+      "isPublished": true
+    }
+  },
+  "pythonExerciseExample": {
+    "endpoint": "POST /api/v1/topics/:topicId/exercises",
+    "description": "Example Python exercise",
+    "body": {
+      "title": "Calculate Factorial",
+      "description": "Write a function to calculate factorial of a number",
+      "instructions": "Create a function called 'factorial' that takes a number n and returns n!",
+      "language": "python",
+      "difficultyLevel": "intermediate",
+      "starterCode": "def factorial(n):\n    # Your code here\n    pass",
+      "solutionCode": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)",
+      "points": 20,
+      "isPublished": true
+    }
+  },
+  "javaExerciseExample": {
+    "endpoint": "POST /api/v1/topics/:topicId/exercises",
+    "description": "Example Java exercise",
+    "body": {
+      "title": "Reverse a String",
+      "description": "Write a method to reverse a string",
+      "instructions": "Create a method called 'reverseString' that takes a String and returns it reversed",
+      "language": "java",
+      "difficultyLevel": "beginner",
+      "starterCode": "public class Solution {\n    public String reverseString(String str) {\n        // Your code here\n    }\n}",
+      "solutionCode": "public class Solution {\n    public String reverseString(String str) {\n        return new StringBuilder(str).reverse().toString();\n    }\n}",
+      "points": 15,
+      "isPublished": true
+    }
+  }
+}
