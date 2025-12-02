@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
 import { quizService } from '../../services/quiz.service';
+import { exerciseService, type Exercise } from '../../services/exercise.service';
 import type { CurriculumWithDetails, Topic, Quiz } from '../../types';
 
 export const TopicNavigation: React.FC = () => {
@@ -15,6 +16,8 @@ export const TopicNavigation: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [topicQuizzes, setTopicQuizzes] = useState<Quiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+  const [topicExercises, setTopicExercises] = useState<Exercise[]>([]);
+  const [loadingExercises, setLoadingExercises] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -24,7 +27,9 @@ export const TopicNavigation: React.FC = () => {
 
   useEffect(() => {
     if (flatTopics.length > 0 && flatTopics[currentTopicIndex]) {
-      loadTopicQuizzes(flatTopics[currentTopicIndex].id);
+      const topicId = flatTopics[currentTopicIndex].id;
+      loadTopicQuizzes(topicId);
+      loadTopicExercises(topicId);
     }
   }, [currentTopicIndex, flatTopics]);
 
@@ -72,6 +77,20 @@ export const TopicNavigation: React.FC = () => {
       setTopicQuizzes([]);
     } finally {
       setLoadingQuizzes(false);
+    }
+  };
+
+  const loadTopicExercises = async (topicId: string) => {
+    try {
+      setLoadingExercises(true);
+      const exercises = await exerciseService.getExercisesByTopic(topicId);
+      // Only show published exercises to learners
+      setTopicExercises(exercises.filter(e => e.is_published));
+    } catch (err: any) {
+      console.error('Failed to load exercises:', err);
+      setTopicExercises([]);
+    } finally {
+      setLoadingExercises(false);
     }
   };
 
@@ -389,6 +408,78 @@ export const TopicNavigation: React.FC = () => {
               {!currentTopic.content && (
                 <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
                   <p className="text-gray-600">Content coming soon...</p>
+                </div>
+              )}
+
+              {/* Exercises Section */}
+              {topicExercises.length > 0 && (
+                <div className="mt-8 border-t border-gray-200 pt-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    Practice Exercises
+                  </h2>
+                  <div className="space-y-4">
+                    {topicExercises.map((exercise) => (
+                      <div
+                        key={exercise.id}
+                        className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {exercise.title}
+                              </h3>
+                              <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                exercise.difficulty_level === 'beginner' ? 'bg-green-100 text-green-800' :
+                                exercise.difficulty_level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {exercise.difficulty_level}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">{exercise.description}</p>
+                            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                                Language: {exercise.language}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Points: {exercise.points}
+                              </span>
+                              {exercise.time_limit_seconds && (
+                                <span className="flex items-center gap-1">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Time Limit: {exercise.time_limit_seconds}s
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => navigate(`/exercises/${exercise.id}`)}
+                            className="ml-4 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                          >
+                            Start Exercise
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {loadingExercises && (
+                <div className="mt-8 border-t border-gray-200 pt-6">
+                  <div className="text-center text-gray-500">Loading exercises...</div>
                 </div>
               )}
 

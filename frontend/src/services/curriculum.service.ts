@@ -216,7 +216,7 @@ class CurriculumService {
    * Get topic summary with counts
    */
   async getTopicSummary(topicId: string): Promise<any> {
-    const response: any = await httpClient.get(`/topics/${topicId}/summary`);
+    const response: any = await httpClient.get(`${this.BASE_URL}/topics/${topicId}/summary`);
     return response.data;
   }
 }

@@ -3,6 +3,7 @@ import { OpenAIProvider } from './openai.provider';
 import { AnthropicProvider } from './anthropic.provider';
 import { LocalLLMProvider } from './local.provider';
 import { decryptText } from '../../utils/encryption.util';
+import { AIProviderRepository } from '../../repositories/aiProvider.repository';
 
 /**
  * Factory to create AI provider instances based on configuration
@@ -62,5 +63,23 @@ export class AIProviderFactory {
   static async getProviderModels(providerConfig: AIProvider): Promise<string[]> {
     const provider = this.createProvider(providerConfig);
     return await provider.getAvailableModels();
+  }
+
+  /**
+   * Get a provider instance by ID and userId
+   */
+  static async getProvider(providerId: string, userId: string): Promise<AIProviderInterface> {
+    const providerRepo = new AIProviderRepository();
+    const providerConfig = await providerRepo.getProviderById(providerId, userId);
+
+    if (!providerConfig) {
+      throw new Error(`Provider ${providerId} not found`);
+    }
+
+    if (!providerConfig.is_active) {
+      throw new Error(`Provider ${providerConfig.provider_name} is not active`);
+    }
+
+    return this.createProvider(providerConfig);
   }
 }

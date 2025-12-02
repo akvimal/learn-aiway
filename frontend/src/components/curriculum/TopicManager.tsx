@@ -11,6 +11,7 @@ export const TopicManager: React.FC = () => {
   // Curriculum state
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [topicCounts, setTopicCounts] = useState<Record<string, { exercises: number; quizzes: number; objectives: number }>>({});
 
   // AI provider state
   const [providers, setProviders] = useState<AIProvider[]>([]);
@@ -51,11 +52,34 @@ export const TopicManager: React.FC = () => {
       const response = await curriculumService.getCurriculumById(id);
       setCurriculum(response.curriculum);
       setTopics(response.topics || []);
+
+      // Load counts for each topic
+      await loadTopicCounts(response.topics || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load curriculum');
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadTopicCounts = async (topicsList: Topic[]) => {
+    const counts: Record<string, { exercises: number; quizzes: number; objectives: number }> = {};
+
+    for (const topic of topicsList) {
+      try {
+        const summary = await curriculumService.getTopicSummary(topic.id);
+        counts[topic.id] = {
+          exercises: summary.exercise_count || 0,
+          quizzes: summary.quiz_count || 0,
+          objectives: summary.objective_count || 0,
+        };
+      } catch (err) {
+        console.error(`Failed to load counts for topic ${topic.id}:`, err);
+        counts[topic.id] = { exercises: 0, quizzes: 0, objectives: 0 };
+      }
+    }
+
+    setTopicCounts(counts);
   };
 
   const loadProviders = async () => {
@@ -564,6 +588,27 @@ export const TopicManager: React.FC = () => {
                         </span>
                       )}
                     </div>
+                    {/* Content Stats */}
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className={`flex items-center gap-1 text-xs font-medium ${topicCounts[topic.id]?.objectives > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {topicCounts[topic.id]?.objectives || 0} Objectives
+                      </span>
+                      <span className={`flex items-center gap-1 text-xs font-medium ${topicCounts[topic.id]?.exercises > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        {topicCounts[topic.id]?.exercises || 0} Exercises
+                      </span>
+                      <span className={`flex items-center gap-1 text-xs font-medium ${topicCounts[topic.id]?.quizzes > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        {topicCounts[topic.id]?.quizzes || 0} Quizzes
+                      </span>
+                    </div>
                     {topic.description && (
                       <p className="text-gray-600 mb-2">{topic.description}</p>
                     )}
@@ -575,10 +620,26 @@ export const TopicManager: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => navigate(`/topics/${topic.id}/exercises`)}
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                    >
+                      Exercises
+                    </button>
+                    <button
                       onClick={() => navigate(`/topics/${topic.id}/quizzes`)}
                       className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                     >
                       Quizzes
+                    </button>
+                    <button
+                      onClick={() => navigate(`/topics/${topic.id}/review`)}
+                      className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-1"
+                      title="Quality review"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Review
                     </button>
                     <button
                       onClick={() => handleEditTopic(topic)}

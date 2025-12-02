@@ -56,9 +56,15 @@ export const QuizManager: React.FC = () => {
   };
 
   const loadTopicDetails = async () => {
-    // This would need to be implemented in curriculum service
-    // For now, we'll just set a placeholder
-    setTopic({ id: topicId!, title: 'Topic', description: null } as Topic);
+    if (!topicId) return;
+
+    try {
+      const topicData = await curriculumService.getTopicSummary(topicId);
+      setTopic(topicData);
+    } catch (err) {
+      console.error('Failed to load topic details:', err);
+      setTopic({ id: topicId!, title: 'Topic', description: null } as Topic);
+    }
   };
 
   const handleGenerateQuiz = async (e: React.FormEvent) => {
@@ -121,11 +127,28 @@ export const QuizManager: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md">
         {/* Header */}
         <div className="border-b border-gray-200 p-6">
+          {/* Back Button */}
+          {topic && topic.curriculum_id && (
+            <button
+              onClick={() => navigate(`/instructor/curricula/${topic.curriculum_id}/topics`)}
+              className="mb-4 flex items-center text-blue-600 hover:text-blue-800 font-medium"
+            >
+              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Back to Topic Management
+            </button>
+          )}
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Quiz Management</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Create and manage AI-generated quizzes for this topic
+                {topic?.title ? `${topic.title} - ` : ''}Create and manage AI-generated quizzes for this topic
               </p>
             </div>
             <button
@@ -308,6 +331,12 @@ export const QuizManager: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => navigate(`/quizzes/${quiz.id}/review`)}
+                        className="px-3 py-1 text-sm text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium"
+                      >
+                        📋 Review All
+                      </button>
                       <button
                         onClick={() => navigate(`/quizzes/${quiz.id}`)}
                         className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors"

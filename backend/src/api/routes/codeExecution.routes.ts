@@ -10,6 +10,7 @@ router.use(authenticate);
 // Code submission routes
 router.post('/exercises/:exerciseId/submit/javascript', codeExecutionController.submitJavaScript);
 router.post('/exercises/:exerciseId/submit/java', codeExecutionController.submitJava);
+router.post('/exercises/:exerciseId/submit/python', codeExecutionController.submitPython);
 
 // Submission history and details
 router.get('/exercises/:exerciseId/submissions', codeExecutionController.getSubmissionHistory);

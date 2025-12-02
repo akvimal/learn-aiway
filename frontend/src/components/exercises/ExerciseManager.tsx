@@ -59,13 +59,25 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [providers, setProviders] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [generatedHints, setGeneratedHints] = useState<any[]>([]);
 
   // Load AI providers on mount
   React.useEffect(() => {
     loadProviders();
   }, []);
+
+  // Auto-dismiss success message after 5 seconds
+  React.useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const loadProviders = async () => {
     try {
@@ -168,9 +180,10 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
 
     setIsGenerating(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
-      await httpClient.post('/ai/generate/hints', {
+      const response = await httpClient.post('/ai/generate/hints', {
         exerciseId,
         exerciseTitle: exercise.title,
         exerciseDescription: exercise.description,
@@ -179,7 +192,12 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
         numHints: 3,
       });
 
-      alert('Hints generated successfully!');
+      // Fetch the generated hints
+      const hintsResponse = await httpClient.get(`/exercises/${exerciseId}`);
+      const hints = hintsResponse.data.hints || [];
+      setGeneratedHints(hints);
+
+      setSuccessMessage(`Successfully generated ${hints.length} hints!`);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to generate hints');
     } finally {
@@ -236,7 +254,24 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Exercise</h2>
+        {/* Back Navigation */}
+        <button
+          onClick={() => onComplete?.()}
+          className="mb-4 flex items-center text-purple-600 hover:text-purple-800 font-medium"
+        >
+          <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to Exercises
+        </button>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Exercise</h2>
+        <p className="text-gray-600 mb-6">Topic: {topicTitle}</p>
 
         {/* AI Provider Selection */}
         {providers.length > 0 && (
@@ -537,13 +572,47 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
               Generate progressive hints that guide learners without revealing the solution.
             </p>
 
+            {/* Success Message */}
+            {successMessage && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-800">{successMessage}</p>
+              </div>
+            )}
+
             <button
               onClick={handleGenerateHints}
               disabled={isGenerating}
               className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
             >
-              {isGenerating ? 'Generating...' : '🤖 Generate Hints with AI'}
+              {isGenerating ? 'Generating...' : generatedHints.length > 0 ? '🔄 Regenerate Hints' : '🤖 Generate Hints with AI'}
             </button>
+
+            {/* Display Generated Hints */}
+            {generatedHints.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <h4 className="font-medium text-gray-900">Generated Hints:</h4>
+                {generatedHints
+                  .sort((a, b) => a.hint_level - b.hint_level)
+                  .map((hint, index) => (
+                    <div
+                      key={hint.id || index}
+                      className="p-4 bg-gray-50 border border-gray-200 rounded-md"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h5 className="font-medium text-gray-900">
+                            Hint {hint.hint_level}
+                            {hint.reveals_solution && (
+                              <span className="ml-2 text-xs text-red-600">(Reveals Solution)</span>
+                            )}
+                          </h5>
+                          <p className="mt-1 text-sm text-gray-700">{hint.hint_text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
 
             <button
               onClick={onComplete}

@@ -10,12 +10,18 @@ import { TopicNavigation } from './components/curriculum/TopicNavigation';
 import { CurriculumEditor } from './components/curriculum/CurriculumEditor';
 import { InstructorCurricula } from './components/curriculum/InstructorCurricula';
 import { TopicManager } from './components/curriculum/TopicManager';
+import { TopicReview } from './components/curriculum/TopicReview';
 import { AIProviderManagement } from './components/ai/AIProviderManagement';
 import { AIChat } from './components/ai/AIChat';
 import { QuizManager } from './components/quiz/QuizManager';
 import { QuizTaker } from './components/quiz/QuizTaker';
 import { QuizResults } from './components/quiz/QuizResults';
 import { QuizHistory } from './components/quiz/QuizHistory';
+import { QuizReview } from './components/quiz/QuizReview';
+import { ExerciseList } from './components/exercises/ExerciseList';
+import { ExerciseManagerWrapper } from './components/exercises/ExerciseManagerWrapper';
+import { ExerciseEditorWrapper } from './components/exercises/ExerciseEditorWrapper';
+import { ExerciseSolver } from './components/exercises/ExerciseSolver';
 import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { UserRole } from './types';
@@ -270,6 +276,18 @@ const App: React.FC = () => {
         }
       />
 
+      {/* AI Topic Review */}
+      <Route
+        path="/topics/:topicId/review"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <TopicReview />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* AI Provider Routes - Designer (Instructor/Admin) Only */}
       <Route
         path="/ai/providers"
@@ -335,6 +353,65 @@ const App: React.FC = () => {
             <AppLayout>
               <QuizHistory />
             </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Instructor: Review all quiz questions */}
+      <Route
+        path="/quizzes/:quizId/review"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <QuizReview />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Exercise Routes */}
+      {/* Instructor: Manage exercises for a topic */}
+      <Route
+        path="/topics/:topicId/exercises"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <ExerciseList />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Instructor: Create new exercise for a topic */}
+      <Route
+        path="/topics/:topicId/exercises/create"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <ExerciseManagerWrapper />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Instructor: Edit existing exercise */}
+      <Route
+        path="/exercises/:exerciseId/edit"
+        element={
+          <ProtectedRoute requiredRoles={[UserRole.INSTRUCTOR, UserRole.ADMIN]}>
+            <AppLayout>
+              <ExerciseEditorWrapper />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Learner: Work on an exercise */}
+      <Route
+        path="/exercises/:exerciseId"
+        element={
+          <ProtectedRoute>
+            <ExerciseSolver />
           </ProtectedRoute>
         }
       />

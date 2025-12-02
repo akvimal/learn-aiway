@@ -248,7 +248,7 @@ export const generateTopics = async (
     } = req.body;
 
     // Validation
-    if (!curriculumId || !curriculumTitle || !curriculumDescription || !difficultyLevel || !domain) {
+    if (!curriculumId || !curriculumTitle || !difficultyLevel || !domain) {
       throw new BadRequestError('Missing required fields');
     }
 
@@ -340,6 +340,112 @@ export const generateObjectives = async (
         objectives,
         count: objectives.length,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get the latest review for a topic
+ * GET /api/v1/ai/review/topic/:topicId
+ */
+export const getLatestTopicReview = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { topicId } = req.params;
+
+    if (!topicId) {
+      throw new BadRequestError('topicId is required');
+    }
+
+    const review = await aiContentGeneratorService.getLatestTopicReview(topicId);
+
+    if (!review) {
+      res.status(200).json({
+        success: true,
+        data: null,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: review,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Review topic quality and alignment with AI
+ * POST /api/v1/ai/review/topic
+ */
+export const reviewTopic = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { topicData, providerId } = req.body;
+
+    // Validation
+    if (!topicData || !providerId) {
+      throw new BadRequestError('Missing required fields: topicData and providerId');
+    }
+
+    if (!topicData.topic) {
+      throw new BadRequestError('topicData must include topic information');
+    }
+
+    const review = await aiContentGeneratorService.reviewTopicQuality(
+      topicData,
+      providerId,
+      userId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: review,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Deep dive analysis on a specific finding
+ * POST /api/v1/ai/review/finding/deep-dive
+ */
+export const deepDiveFinding = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { topicData, finding, providerId } = req.body;
+
+    // Validation
+    if (!topicData || !finding || !providerId) {
+      throw new BadRequestError('Missing required fields: topicData, finding, and providerId');
+    }
+
+    const enhancedFinding = await aiContentGeneratorService.deepDiveFinding(
+      topicData,
+      finding,
+      providerId,
+      userId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: enhancedFinding,
     });
   } catch (error) {
     next(error);

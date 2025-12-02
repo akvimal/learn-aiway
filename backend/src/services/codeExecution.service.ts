@@ -105,6 +105,111 @@ export class CodeExecutionService {
   }
 
   /**
+   * Execute Python code using Judge0 API
+   */
+  async executePython(
+    exerciseId: string,
+    userId: string,
+    code: string
+  ): Promise<SubmissionResult> {
+    try {
+      // Fetch test cases
+      const testCasesQuery = await database.query<TestCase>(
+        `SELECT * FROM exercise_test_cases
+         WHERE exercise_id = $1
+         ORDER BY order_index`,
+        [exerciseId]
+      );
+
+      const testCases = testCasesQuery.rows;
+      const testResults: TestResult[] = [];
+      let passedTests = 0;
+
+      // Execute code against each test case using Judge0
+      for (const testCase of testCases) {
+        try {
+          const result = await this.executeWithJudge0(
+            code,
+            'python',
+            testCase.input_data,
+            testCase.expected_output
+          );
+
+          const passed = result.passed;
+          if (passed) passedTests++;
+
+          testResults.push({
+            testCaseId: testCase.id,
+            testName: testCase.test_name,
+            passed,
+            actual: result.output,
+            expected: testCase.expected_output,
+            error: result.error,
+            isHidden: testCase.is_hidden,
+            points: testCase.points,
+          });
+        } catch (error: any) {
+          testResults.push({
+            testCaseId: testCase.id,
+            testName: testCase.test_name,
+            passed: false,
+            actual: null,
+            expected: testCase.expected_output,
+            error: error.message,
+            isHidden: testCase.is_hidden,
+            points: testCase.points,
+          });
+        }
+      }
+
+      const totalTests = testCases.length;
+      const score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+      const status: 'passed' | 'failed' = score === 100 ? 'passed' : 'failed';
+
+      // Create submission record
+      const submissionQuery = await database.query(
+        `INSERT INTO code_submissions
+         (exercise_id, user_id, code, language, status, passed_tests, total_tests, score, test_results, executed_at)
+         VALUES ($1, $2, $3, 'python', $4, $5, $6, $7, $8, NOW())
+         RETURNING id`,
+        [
+          exerciseId,
+          userId,
+          code,
+          status,
+          passedTests,
+          totalTests,
+          score,
+          JSON.stringify(testResults),
+        ]
+      );
+
+      const submissionId = submissionQuery.rows[0].id;
+
+      logger.info('Python code executed', {
+        exerciseId,
+        userId,
+        submissionId,
+        passedTests,
+        totalTests,
+        score,
+      });
+
+      return {
+        submissionId,
+        status,
+        passedTests,
+        totalTests,
+        score,
+        testResults,
+      };
+    } catch (error) {
+      logger.error('Failed to execute Python code', error);
+      throw error;
+    }
+  }
+
+  /**
    * Execute Java code using Judge0 API
    */
   async executeJava(

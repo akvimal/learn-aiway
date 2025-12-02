@@ -71,6 +71,39 @@ export const submitJava = async (
 };
 
 /**
+ * Submit Python code for execution
+ * POST /api/v1/exercises/:exerciseId/submit/python
+ */
+export const submitPython = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { exerciseId } = req.params;
+    const { code } = req.body;
+
+    if (!code) {
+      throw new BadRequestError('Code is required');
+    }
+
+    const result = await codeExecutionService.executePython(
+      exerciseId,
+      userId,
+      code
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get submission history for an exercise
  * GET /api/v1/exercises/:exerciseId/submissions
  */

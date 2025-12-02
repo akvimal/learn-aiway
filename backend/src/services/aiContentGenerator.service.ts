@@ -1,6 +1,6 @@
 import { database } from '../config/database.config';
 import { logger } from '../config/logger.config';
-import { aiProviderFactory } from './ai/provider.factory';
+import { AIProviderFactory } from './ai/provider.factory';
 import type {
   AIChatMessage,
   AIChatCompletionRequest,
@@ -73,7 +73,7 @@ export class AIContentGeneratorService {
   ): Promise<string> {
     try {
       // Get AI provider
-      const provider = await aiProviderFactory.getProvider(input.providerId, userId);
+      const provider = await AIProviderFactory.getProvider(input.providerId, userId);
 
       // Build prompt based on variation type
       const prompt = this.buildContentVariationPrompt(input);
@@ -135,14 +135,14 @@ export class AIContentGeneratorService {
     solutionCode: string;
   }> {
     try {
-      const provider = await aiProviderFactory.getProvider(input.providerId, userId);
+      const provider = await AIProviderFactory.getProvider(input.providerId, userId);
 
       const prompt = this.buildExercisePrompt(input);
 
       const messages: AIChatMessage[] = [
         {
           role: 'system',
-          content: 'You are an expert programming instructor creating educational exercises. Return your response in valid JSON format with the following structure: {"title": "...", "description": "...", "instructions": "...", "starterCode": "...", "solutionCode": "..."}',
+          content: 'You are an expert programming instructor. Return ONLY valid JSON. Use \\n for newlines in code, not actual line breaks. Escape all special characters properly.',
         },
         { role: 'user', content: prompt },
       ];
@@ -150,7 +150,12 @@ export class AIContentGeneratorService {
       const response: AIChatCompletionResponse = await provider.sendChatCompletion({
         messages,
         temperature: 0.8,
-        max_tokens: 3000,
+        max_tokens: 5000, // Increased for full exercise with starter + solution code
+      });
+
+      logger.info('Raw AI response for exercise generation', {
+        contentLength: response.content.length,
+        preview: response.content.substring(0, 500)
       });
 
       // Parse JSON response
@@ -160,6 +165,11 @@ export class AIContentGeneratorService {
         topicId: input.topicId,
         language: input.language,
         difficultyLevel: input.difficultyLevel,
+        hasTitle: !!exerciseData.title,
+        hasDescription: !!exerciseData.description,
+        hasInstructions: !!exerciseData.instructions,
+        hasStarterCode: !!exerciseData.starterCode,
+        hasSolutionCode: !!exerciseData.solutionCode,
       });
 
       return exerciseData;
@@ -177,32 +187,36 @@ export class AIContentGeneratorService {
     userId: string
   ): Promise<string[]> {
     try {
-      const provider = await aiProviderFactory.getProvider(input.providerId, userId);
+      const provider = await AIProviderFactory.getProvider(input.providerId, userId);
 
-      const prompt = `Given this programming exercise, generate ${input.numHints} progressive hints that guide learners toward the solution WITHOUT giving away the answer directly.
+      const prompt = `Generate ${input.numHints} progressive hints for this exercise.
 
-Exercise Title: ${input.exerciseTitle}
+Exercise: ${input.exerciseTitle}
 Description: ${input.exerciseDescription}
 
-Solution Code (for reference only, do NOT include in hints):
-\`\`\`
-${input.solutionCode}
-\`\`\`
+Solution (reference only):
+${input.solutionCode.substring(0, 200)}...
 
-Requirements for hints:
-1. Hint 1: Gentle nudge about the approach (most vague)
-2. Hint 2: Explain the key concept needed
-3. Hint 3: Describe the algorithm or steps
-4. Hint 4 (if needed): Provide pseudocode
-5. Hint 5 (if needed): Almost reveal the solution but stop short
+IMPORTANT: Return ONLY a JSON array. Do NOT add explanations, markdown, or additional text.
 
-Return your response as a JSON array of strings:
-["Hint 1 text", "Hint 2 text", "Hint 3 text", ...]`;
+Format (use exactly ${input.numHints} hints):
+[
+  "Hint 1: gentle nudge",
+  "Hint 2: key concept",
+  "Hint 3: algorithm steps"
+]
+
+Rules:
+- Return ONLY the JSON array, nothing else
+- Each hint is progressively more revealing
+- No markdown code blocks
+- No explanatory text
+- Keep hints brief (1-2 sentences each)`;
 
       const messages: AIChatMessage[] = [
         {
           role: 'system',
-          content: 'You are an expert programming instructor creating progressive hints. Return valid JSON array only.',
+          content: 'You are an expert instructor. Return ONLY a valid JSON array of strings. No markdown, no explanations, ONLY the JSON array.',
         },
         { role: 'user', content: prompt },
       ];
@@ -220,7 +234,18 @@ Return your response as a JSON array of strings:
         throw new Error('AI did not return a valid hints array');
       }
 
-      // Store hints in database
+      // Delete existing AI-generated hints for this exercise before inserting new ones
+      await database.query(
+        `DELETE FROM exercise_hints
+         WHERE exercise_id = $1 AND generated_by_ai = true`,
+        [input.exerciseId]
+      );
+
+      logger.info('Deleted existing AI-generated hints', {
+        exerciseId: input.exerciseId,
+      });
+
+      // Store new hints in database
       for (let i = 0; i < hints.length; i++) {
         await database.query(
           `INSERT INTO exercise_hints
@@ -256,7 +281,7 @@ Return your response as a JSON array of strings:
     userId: string
   ): Promise<any[]> {
     try {
-      const provider = await aiProviderFactory.getProvider(input.providerId, userId);
+      const provider = await AIProviderFactory.getProvider(input.providerId, userId);
 
       const prompt = `Generate ${input.numTestCases} test cases for this ${input.language} programming exercise.
 
@@ -357,7 +382,7 @@ Return as JSON array:
     estimatedDurationMinutes?: number;
   }>> {
     try {
-      const provider = await aiProviderFactory.getProvider(providerId, userId);
+      const provider = await AIProviderFactory.getProvider(providerId, userId);
 
       const prompt = `Generate ${input.numTopics} learning topics for a curriculum in the ${input.domain} domain.
 
@@ -429,35 +454,41 @@ Return as JSON array:
     providerId: string
   ): Promise<string[]> {
     try {
-      const provider = await aiProviderFactory.getProvider(providerId, userId);
+      const provider = await AIProviderFactory.getProvider(providerId, userId);
 
-      const prompt = `Generate ${input.numObjectives} specific, measurable learning objectives for this topic.
+      const prompt = `Generate ${input.numObjectives} HIGHLY SPECIFIC, measurable learning objectives for this EXACT topic.
 
 Topic Title: ${input.topicTitle}
 ${input.topicDescription ? `Topic Description: ${input.topicDescription}` : ''}
 ${input.topicContent ? `Topic Content:\n${input.topicContent}` : ''}
 Difficulty Level: ${input.difficultyLevel}
 
-Requirements:
-1. Use action verbs (understand, explain, implement, analyze, create, etc.)
-2. Make each objective specific and measurable
-3. Appropriate for ${input.difficultyLevel} level learners
-4. Focus on what learners will be able to DO after completing the topic
-5. Follow Bloom's Taxonomy principles
-6. Each objective should be 1-2 sentences
+CRITICAL REQUIREMENTS:
+1. Objectives MUST be SPECIFIC to "${input.topicTitle}" - not generic statements that could apply to any topic
+2. Use concrete action verbs (understand, explain, implement, analyze, create, compare, demonstrate, etc.)
+3. Make each objective measurable and testable
+4. Appropriate for ${input.difficultyLevel} level learners
+5. Focus on what learners will be able to DO after completing THIS SPECIFIC topic
+6. Follow Bloom's Taxonomy principles (Knowledge -> Comprehension -> Application -> Analysis -> Synthesis -> Evaluation)
+7. Each objective should be 1-2 sentences
+8. Reference specific concepts, tools, or techniques mentioned in the topic title and content
 
-Examples:
-- "Explain the difference between var, let, and const in JavaScript"
-- "Implement functions using arrow syntax and understand their scope behavior"
-- "Analyze code to identify and fix common variable scoping issues"
+WRONG (too generic):
+- "Understand the basics of programming"
+- "Learn how to write code"
 
-Return as JSON array of strings:
+RIGHT (specific to topic):
+- "Explain the difference between var, let, and const in JavaScript and when to use each"
+- "Implement arrow functions and demonstrate understanding of their lexical 'this' binding"
+- "Compare traditional functions with arrow functions and identify use cases for each"
+
+Return ONLY a valid JSON array of strings (no markdown, no code blocks):
 ["Objective 1", "Objective 2", "Objective 3", ...]`;
 
       const messages: AIChatMessage[] = [
         {
           role: 'system',
-          content: 'You are an expert instructional designer creating learning objectives using Bloom\'s Taxonomy. Return valid JSON array only.',
+          content: 'You are an expert instructional designer creating HIGHLY SPECIFIC learning objectives using Bloom\'s Taxonomy. Your objectives must be uniquely tailored to each topic - never use generic statements. Return ONLY a valid JSON array, no markdown formatting.',
         },
         { role: 'user', content: prompt },
       ];
@@ -516,62 +547,538 @@ Generate the content now:`;
   }
 
   private buildExercisePrompt(input: GenerateExerciseInput): string {
-    return `Create a ${input.language} programming exercise for ${input.difficultyLevel} learners on the topic: "${input.topicTitle}"
+    return `Create a ${input.language} ${input.difficultyLevel} programming exercise: "${input.topicTitle}"
 
-Topic Content:
-${input.topicContent}
+Topic: ${input.topicContent}
+${input.exerciseDescription ? `Requirements: ${input.exerciseDescription}` : ''}
 
-${input.exerciseDescription ? `Specific Requirements:\n${input.exerciseDescription}\n` : ''}
+IMPORTANT: Return ONLY valid JSON with DOUBLE QUOTES. Do NOT use backticks or template literals.
+Use \\n for line breaks inside strings.
 
-Create an exercise with:
-1. A clear, concise title
-2. A description explaining what the exercise teaches
-3. Detailed instructions for what the learner should implement
-4. Starter code (template with TODOs or function signatures)
-5. A complete solution (working code)
-
-Return the exercise in this exact JSON format:
 {
-  "title": "Exercise title here",
-  "description": "What this exercise teaches",
-  "instructions": "Step-by-step instructions",
-  "starterCode": "// Starter code template",
-  "solutionCode": "// Complete working solution"
+  "title": "Clear exercise title",
+  "description": "Brief 1-2 sentence description",
+  "instructions": "Step 1\\nStep 2\\nStep 3",
+  "starterCode": "// Code here\\nfunction example() {\\n  // TODO\\n}",
+  "solutionCode": "// Solution\\nfunction example() {\\n  return true;\\n}"
 }
 
-Make sure the exercise is:
-- Appropriate for ${input.difficultyLevel} level
-- Focused on one clear learning objective
-- Has testable inputs/outputs
-- Includes helpful comments
+Rules:
+- Use ONLY double quotes for strings, NEVER backticks
+- Use \\n for newlines inside strings
+- Escape special characters: \\n \\t \\" \\\\
+- Keep code concise (5-10 lines)`;
+  }
 
-Generate the exercise now:`;
+  /**
+   * Get the latest review for a topic
+   */
+  async getLatestTopicReview(topicId: string): Promise<{
+    id: string;
+    overallScore: number;
+    summary: string;
+    findings: Array<{
+      category: string;
+      severity: 'critical' | 'warning' | 'suggestion';
+      title: string;
+      description: string;
+      affectedItems?: string[];
+      suggestion: string;
+    }>;
+    aiProvider?: string;
+    aiModel?: string;
+    createdAt: Date;
+    objectivesCount: number;
+    exercisesCount: number;
+    quizzesCount: number;
+  } | null> {
+    try {
+      const result = await database.query(
+        `SELECT tr.*, ap.provider_name as ai_provider_name
+         FROM topic_reviews tr
+         LEFT JOIN ai_providers ap ON tr.ai_provider_id = ap.id
+         WHERE tr.topic_id = $1
+         ORDER BY tr.created_at DESC
+         LIMIT 1`,
+        [topicId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        overallScore: row.overall_score,
+        summary: row.summary,
+        findings: row.findings,
+        aiProvider: row.ai_provider_name,
+        aiModel: row.ai_model,
+        createdAt: row.created_at,
+        objectivesCount: row.objectives_count,
+        exercisesCount: row.exercises_count,
+        quizzesCount: row.quizzes_count,
+      };
+    } catch (error) {
+      logger.error('Failed to get latest topic review', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Review topic quality, alignment, and completeness with AI
+   */
+  async reviewTopicQuality(
+    topicData: any,
+    providerId: string,
+    userId: string
+  ): Promise<{
+    overallScore: number;
+    summary: string;
+    findings: Array<{
+      category: string;
+      severity: 'critical' | 'warning' | 'suggestion';
+      title: string;
+      description: string;
+      affectedItems?: string[];
+      suggestion: string;
+    }>;
+  }> {
+    try {
+      const provider = await AIProviderFactory.getProvider(providerId, userId);
+
+      const prompt = this.buildTopicReviewPrompt(topicData);
+
+      const messages: AIChatMessage[] = [
+        {
+          role: 'system',
+          content: `You are an expert educational content reviewer and instructional designer. Your role is to analyze learning topics for quality, alignment, and pedagogical soundness. You evaluate:
+
+1. ALIGNMENT: Do exercises and quizzes align with learning objectives?
+2. COVERAGE: Are all objectives adequately covered by assessments?
+3. QUALITY: Are instructions clear? Are questions unambiguous? Are test cases comprehensive?
+4. DIFFICULTY: Is there appropriate progression? Are difficulty levels consistent?
+5. COMPLETENESS: Are there sufficient hints? Adequate test cases? Complete solutions?
+6. PEDAGOGY: Does the content follow sound educational principles?
+
+Return valid JSON only with this structure:
+{
+  "overallScore": 85,
+  "summary": "Brief overall assessment (2-3 sentences)",
+  "findings": [
+    {
+      "category": "alignment|coverage|quality|difficulty|completeness|pedagogy",
+      "severity": "critical|warning|suggestion",
+      "title": "Brief title",
+      "description": "Detailed explanation",
+      "affectedItems": ["item1", "item2"],
+      "suggestion": "Specific actionable recommendation to fix this issue"
+    }
+  ]
+}`,
+        },
+        { role: 'user', content: prompt },
+      ];
+
+      const response: AIChatCompletionResponse = await provider.sendChatCompletion({
+        messages,
+        temperature: 0.4, // Lower temperature for more consistent analysis
+        max_tokens: 4000,
+      });
+
+      // Parse JSON response
+      const review = this.parseJSONResponse(response.content);
+
+      if (!review.overallScore || !review.summary || !Array.isArray(review.findings)) {
+        throw new Error('AI did not return a valid review structure');
+      }
+
+      // Save review to database
+      await database.query(
+        `INSERT INTO topic_reviews
+         (topic_id, overall_score, summary, findings, ai_provider_id, ai_model, reviewed_by, objectives_count, exercises_count, quizzes_count)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          topicData.topic?.id,
+          review.overallScore,
+          review.summary,
+          JSON.stringify(review.findings),
+          providerId,
+          response.model,
+          userId,
+          topicData.objectives?.length || 0,
+          topicData.exercises?.length || 0,
+          topicData.quizzes?.length || 0,
+        ]
+      );
+
+      logger.info('Generated and saved topic review', {
+        topicId: topicData.topic?.id,
+        overallScore: review.overallScore,
+        findingsCount: review.findings.length,
+      });
+
+      return review;
+    } catch (error) {
+      logger.error('Failed to review topic quality', error);
+      throw error;
+    }
+  }
+
+  private buildTopicReviewPrompt(topicData: any): string {
+    const { topic, objectives, exercises, quizzes } = topicData;
+
+    let prompt = `Please conduct a comprehensive quality review of this learning topic:
+
+TOPIC INFORMATION:
+Title: ${topic.title}
+Description: ${topic.description || 'N/A'}
+Content Preview: ${topic.content ? topic.content.substring(0, 500) + '...' : 'N/A'}
+
+LEARNING OBJECTIVES (${objectives?.length || 0}):
+${objectives?.map((obj: any, idx: number) => `${idx + 1}. ${obj.text || obj.objective_text}`).join('\n') || 'No objectives defined'}
+
+EXERCISES (${exercises?.length || 0}):
+${exercises?.map((ex: any, idx: number) => `
+${idx + 1}. ${ex.title} (${ex.difficulty_level})
+   Description: ${ex.description}
+   Language: ${ex.language}
+   Test Cases: ${ex.testCasesCount || 0}
+   Hints: ${ex.hintsCount || 0}
+   ${ex.hints?.length ? `\n   Hints Preview:\n${ex.hints.map((h: any) => `      - Level ${h.hint_level}: ${h.hint_text?.substring(0, 100)}...`).join('\n')}` : ''}
+`).join('\n') || 'No exercises defined'}
+
+QUIZZES (${quizzes?.length || 0}):
+${quizzes?.map((quiz: any, idx: number) => `
+${idx + 1}. ${quiz.title} (${quiz.difficulty_level})
+   Passing Score: ${quiz.passing_score}%
+   Questions: ${quiz.questions?.length || 0}
+   ${quiz.questions?.length ? `\n   Questions Preview:\n${quiz.questions.slice(0, 3).map((q: any) => `      - [${q.question_type}] ${q.question_text?.substring(0, 100)}...`).join('\n')}` : ''}
+`).join('\n') || 'No quizzes defined'}
+
+REVIEW INSTRUCTIONS:
+Analyze this topic thoroughly and identify issues in these categories:
+
+1. ALIGNMENT: Do the exercises and quiz questions directly test the learning objectives? Are there mismatches?
+
+2. COVERAGE: Is each learning objective covered by at least one exercise or quiz? Are there gaps?
+
+3. QUALITY:
+   - Are exercise instructions clear and complete?
+   - Are quiz questions unambiguous and well-written?
+   - Do exercises have sufficient test cases (both public and hidden)?
+   - Are test cases comprehensive (basic, edge cases, stress tests)?
+
+4. DIFFICULTY:
+   - Is there logical progression from easier to harder content?
+   - Are difficulty labels (beginner/intermediate/advanced) accurate?
+   - Are early exercises/quizzes accessible to learners?
+
+5. COMPLETENESS:
+   - Does each exercise have adequate hints (3-5 progressive hints)?
+   - Do hints properly guide without revealing the solution too early?
+   - Are there enough exercises and quizzes to reinforce learning?
+
+6. PEDAGOGY:
+   - Does the content follow sound teaching principles?
+   - Is there a good balance of theory and practice?
+   - Are examples and exercises relevant and practical?
+
+For each issue found, provide:
+- category (alignment, coverage, quality, difficulty, completeness, pedagogy)
+- severity (critical = must fix, warning = should fix, suggestion = nice to have)
+- title (brief summary)
+- description (detailed explanation with specific examples)
+- affectedItems (list of specific objectives, exercises, or quiz questions affected)
+- suggestion (specific, actionable recommendation on how to fix this issue - e.g., "Add an exercise that tests the difference between var, let, and const" or "Revise the quiz question to include multiple-choice options testing scope differences")
+
+Also provide:
+- overallScore (0-100, where 100 is perfect)
+- summary (2-3 sentence overall assessment)
+
+Return ONLY valid JSON, no markdown formatting.`;
+
+    return prompt;
+  }
+
+  /**
+   * Deep dive analysis on a specific finding
+   */
+  async deepDiveFinding(
+    topicData: any,
+    finding: any,
+    providerId: string,
+    userId: string
+  ): Promise<{
+    enhancedDescription: string;
+    enhancedSuggestion: string;
+    enhancedAffectedItems: string[];
+  }> {
+    try {
+      const provider = await AIProviderFactory.getProvider(providerId, userId);
+
+      const prompt = this.buildDeepDiveFindingPrompt(topicData, finding);
+
+      const messages: AIChatMessage[] = [
+        {
+          role: 'system',
+          content: `You are an expert educational content reviewer conducting a deep-dive analysis. Provide detailed, actionable insights with specific examples and recommendations. Return valid JSON only.`,
+        },
+        { role: 'user', content: prompt },
+      ];
+
+      const response: AIChatCompletionResponse = await provider.sendChatCompletion({
+        messages,
+        temperature: 0.5,
+        max_tokens: 4000, // Increased from 2000 for longer analysis
+      });
+
+      logger.info('Raw AI response for deep dive', {
+        contentLength: response.content.length,
+        fullContent: response.content
+      });
+
+      // Parse JSON response
+      const result = this.parseJSONResponse(response.content);
+
+      logger.info('Parsed deep dive result', {
+        hasDescription: !!result.enhancedDescription,
+        hasSuggestion: !!result.enhancedSuggestion,
+        hasAffectedItems: !!result.enhancedAffectedItems,
+        keys: Object.keys(result)
+      });
+
+      if (!result.enhancedDescription || !result.enhancedSuggestion) {
+        logger.error('Invalid deep dive response structure', {
+          result,
+          rawContent: response.content.substring(0, 500)
+        });
+        throw new Error('AI did not return valid deep dive analysis');
+      }
+
+      logger.info('Generated deep dive finding analysis', {
+        topicId: topicData.topic?.id,
+        findingCategory: finding.category,
+        findingSeverity: finding.severity,
+      });
+
+      return result;
+    } catch (error) {
+      logger.error('Failed to perform deep dive finding analysis', error);
+      throw error;
+    }
+  }
+
+  private buildDeepDiveFindingPrompt(topicData: any, finding: any): string {
+    const { topic, objectives, exercises, quizzes } = topicData;
+
+    return `Analyze this finding in detail:
+
+FINDING:
+- Category: ${finding.category}
+- Severity: ${finding.severity}
+- Title: ${finding.title}
+- Description: ${finding.description}
+- Suggestion: ${finding.suggestion}
+- Affected: ${finding.affectedItems?.join(', ') || 'None'}
+
+CONTEXT:
+Topic: ${topic.title}
+Objectives (${objectives?.length || 0}): ${objectives?.slice(0, 5).map((obj: any) => obj.text).join('; ') || 'None'}
+Exercises (${exercises?.length || 0}): ${exercises?.slice(0, 3).map((ex: any) => `${ex.title} (${ex.difficulty})`).join('; ') || 'None'}
+
+TASK:
+1. Enhanced Description: 2-3 detailed paragraphs explaining WHY this matters and specific impact
+2. Enhanced Suggestion: 3-5 concrete, actionable steps to fix this
+3. Enhanced Affected Items: Specific list of what's impacted
+
+Return ONLY valid JSON (use \\n for line breaks):
+{
+  "enhancedDescription": "Detailed description with \\n for paragraphs",
+  "enhancedSuggestion": "Step 1: ...\\nStep 2: ...\\nStep 3: ...",
+  "enhancedAffectedItems": ["Item 1", "Item 2"]
+}
+
+Keep response concise but detailed. Escape all special characters.`;
   }
 
   private parseJSONResponse(content: string): any {
+    let jsonString: string | null = null;
+
     // Try to extract JSON from markdown code blocks
-    const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```/);
+    const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\}|\[[\s\S]*?\])\s*```/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[1]);
+      jsonString = jsonMatch[1];
+    } else {
+      // Try to parse directly
+      try {
+        return JSON.parse(content);
+      } catch (e) {
+        // Try to find the first complete JSON object or array
+        // Use non-greedy matching and proper bracket counting
+        jsonString = this.extractFirstValidJSON(content);
+      }
     }
 
-    // Try to parse directly
+    if (!jsonString) {
+      throw new Error('Could not find JSON in AI response');
+    }
+
+    // Preprocess: Convert template literals (backticks) to escaped JSON strings
+    jsonString = this.convertTemplateLiteralsToJSON(jsonString);
+
+    // Try to parse the JSON string
     try {
-      return JSON.parse(content);
-    } catch (e) {
-      // Try to find JSON object/array in the content
-      const objectMatch = content.match(/\{[\s\S]*\}/);
-      const arrayMatch = content.match(/\[[\s\S]*\]/);
+      return JSON.parse(jsonString);
+    } catch (parseError) {
+      // If parsing fails, try to fix common JSON issues (unescaped control characters)
+      logger.warn('JSON parse failed, attempting to clean', {
+        error: parseError,
+        sample: jsonString.substring(0, 200)
+      });
 
-      if (objectMatch) {
-        return JSON.parse(objectMatch[0]);
-      }
-      if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
-      }
+      // Clean the JSON by escaping control characters in string values
+      const cleaned = this.cleanJSONString(jsonString);
 
-      throw new Error('Could not parse JSON from AI response');
+      try {
+        return JSON.parse(cleaned);
+      } catch (cleanError) {
+        logger.error('Failed to parse JSON even after cleaning', {
+          originalError: parseError,
+          cleanError,
+          originalSample: jsonString.substring(0, 500),
+          cleanedSample: cleaned.substring(0, 500),
+          originalFull: jsonString,
+          cleanedFull: cleaned
+        });
+        throw new Error('Could not parse JSON from AI response');
+      }
     }
+  }
+
+  private cleanJSONString(jsonString: string): string {
+    // Simple but effective approach: replace control characters in string values
+    let inString = false;
+    let escaped = false;
+    let result = '';
+
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+      const prevChar = i > 0 ? jsonString[i - 1] : '';
+
+      if (char === '"' && !escaped) {
+        inString = !inString;
+        result += char;
+      } else if (inString && !escaped) {
+        // Inside a string value, escape control characters
+        if (char === '\n') {
+          result += '\\n';
+        } else if (char === '\r') {
+          result += '\\r';
+        } else if (char === '\t') {
+          result += '\\t';
+        } else if (char === '\\') {
+          escaped = true;
+          result += char;
+        } else {
+          result += char;
+        }
+      } else {
+        result += char;
+        if (escaped) escaped = false;
+      }
+    }
+
+    return result;
+  }
+
+  private extractFirstValidJSON(content: string): string | null {
+    // Find the first { or [ and extract until we have a complete JSON structure
+    const firstBrace = content.indexOf('{');
+    const firstBracket = content.indexOf('[');
+
+    let startChar: string;
+    let endChar: string;
+    let startIndex: number;
+
+    if (firstBrace === -1 && firstBracket === -1) {
+      return null;
+    } else if (firstBrace === -1) {
+      startChar = '[';
+      endChar = ']';
+      startIndex = firstBracket;
+    } else if (firstBracket === -1) {
+      startChar = '{';
+      endChar = '}';
+      startIndex = firstBrace;
+    } else {
+      // Use whichever comes first
+      if (firstBrace < firstBracket) {
+        startChar = '{';
+        endChar = '}';
+        startIndex = firstBrace;
+      } else {
+        startChar = '[';
+        endChar = ']';
+        startIndex = firstBracket;
+      }
+    }
+
+    // Count brackets/braces to find the matching closing bracket/brace
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = startIndex; i < content.length; i++) {
+      const char = content[i];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\' && inString) {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"' && !escaped) {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === startChar) {
+          depth++;
+        } else if (char === endChar) {
+          depth--;
+          if (depth === 0) {
+            // Found the matching closing bracket/brace
+            return content.substring(startIndex, i + 1);
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private convertTemplateLiteralsToJSON(jsonString: string): string {
+    // Replace JavaScript template literals (backticks) with proper JSON strings
+    // Pattern: "key": `value with newlines` -> "key": "value with \\n"
+
+    return jsonString.replace(/:\s*`([^`]*)`/g, (match, content) => {
+      // Escape special characters in the content
+      const escaped = content
+        .replace(/\\/g, '\\\\')  // Escape backslashes first
+        .replace(/"/g, '\\"')    // Escape double quotes
+        .replace(/\n/g, '\\n')   // Escape newlines
+        .replace(/\r/g, '\\r')   // Escape carriage returns
+        .replace(/\t/g, '\\t');  // Escape tabs
+
+      return `: "${escaped}"`;
+    });
   }
 }
 
