@@ -24,6 +24,7 @@ interface ExerciseManagerProps {
   topicId: string;
   topicTitle: string;
   topicContent: string;
+  learningObjectives: Array<{ id: string; objective_text: string }>;
   onComplete?: () => void;
 }
 
@@ -31,6 +32,7 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
   topicId,
   topicTitle,
   topicContent,
+  learningObjectives,
   onComplete,
 }) => {
   const [step, setStep] = useState<'exercise' | 'testcases' | 'hints'>('exercise');
@@ -63,6 +65,7 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
   const [providers, setProviders] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [generatedHints, setGeneratedHints] = useState<any[]>([]);
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
 
   // Load AI providers on mount
   React.useEffect(() => {
@@ -103,6 +106,11 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
     setError(null);
 
     try {
+      // Get the selected objective texts
+      const selectedObjectiveTexts = selectedObjectives
+        .map(id => learningObjectives.find(obj => obj.id === id)?.objective_text)
+        .filter(text => text !== undefined);
+
       const response = await httpClient.post<{ success: boolean; data: any }>(
         '/ai/generate/exercise',
         {
@@ -113,6 +121,7 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
           difficultyLevel: exercise.difficultyLevel,
           providerId: selectedProvider,
           exerciseDescription: exercise.description || undefined,
+          learningObjectives: selectedObjectiveTexts,
         }
       );
 
@@ -130,6 +139,14 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleToggleObjective = (objectiveId: string) => {
+    setSelectedObjectives(prev =>
+      prev.includes(objectiveId)
+        ? prev.filter(id => id !== objectiveId)
+        : [...prev, objectiveId]
+    );
   };
 
   const handleGenerateTestCases = async () => {
@@ -373,6 +390,39 @@ export const ExerciseManager: React.FC<ExerciseManagerProps> = ({
                 </select>
               </div>
             </div>
+
+            {/* Learning Objectives Selection */}
+            {learningObjectives.length > 0 && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Learning Objectives (Optional)
+                </label>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select one or more objectives to focus the AI-generated exercise on specific learning goals.
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {learningObjectives.map((objective) => (
+                    <label
+                      key={objective.id}
+                      className="flex items-start gap-2 p-2 bg-white rounded cursor-pointer hover:bg-blue-100"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedObjectives.includes(objective.id)}
+                        onChange={() => handleToggleObjective(objective.id)}
+                        className="mt-1 h-4 w-4 text-purple-600 rounded focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700 flex-1">{objective.objective_text}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedObjectives.length > 0 && (
+                  <p className="mt-2 text-xs text-green-700">
+                    ✓ {selectedObjectives.length} objective{selectedObjectives.length > 1 ? 's' : ''} selected
+                  </p>
+                )}
+              </div>
+            )}
 
             <button
               onClick={handleGenerateExercise}

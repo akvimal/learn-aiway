@@ -24,6 +24,7 @@ export interface GenerateExerciseInput {
   difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
   providerId: string;
   exerciseDescription?: string;
+  learningObjectives?: string[];  // Array of learning objective texts
 }
 
 export interface GenerateHintsInput {
@@ -565,10 +566,14 @@ Generate the content now:`;
   }
 
   private buildExercisePrompt(input: GenerateExerciseInput): string {
+    const objectivesSection = input.learningObjectives && input.learningObjectives.length > 0
+      ? `\n\nLearning Objectives to Target:\n${input.learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}\n\nCRITICAL: The exercise MUST test and reinforce the above learning objectives. Design the exercise to specifically evaluate whether students have achieved these learning outcomes.`
+      : '';
+
     return `Create a ${input.language} ${input.difficultyLevel} programming exercise: "${input.topicTitle}"
 
 Topic: ${input.topicContent}
-${input.exerciseDescription ? `Requirements: ${input.exerciseDescription}` : ''}
+${input.exerciseDescription ? `Requirements: ${input.exerciseDescription}` : ''}${objectivesSection}
 
 IMPORTANT: Return ONLY valid JSON with DOUBLE QUOTES. Do NOT use backticks or template literals.
 Use \\n for line breaks inside strings.

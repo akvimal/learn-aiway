@@ -82,6 +82,7 @@ export const generateExercise = async (
       difficultyLevel,
       providerId,
       exerciseDescription,
+      learningObjectives,
     } = req.body;
 
     // Validation
@@ -108,6 +109,7 @@ export const generateExercise = async (
         difficultyLevel,
         providerId,
         exerciseDescription,
+        learningObjectives: learningObjectives || [],
       },
       userId
     );
