@@ -309,6 +309,10 @@ Requirements:
    - input_data: {"args": [arg1, arg2, ...]}
    - expected_output: {"result": expectedValue}
 
+CRITICAL: Use ONLY literal values in JSON - NO JavaScript expressions, NO Math.pow(), NO function calls.
+For large numbers, write them as literals: 2147483648 NOT Math.pow(2, 31)
+For strings, use quoted strings: "hello" NOT 'hello'
+
 Return as JSON array:
 [
   {
@@ -317,7 +321,12 @@ Return as JSON array:
     "input_data": {"args": [1, 2]},
     "expected_output": {"result": 3}
   },
-  ...
+  {
+    "test_name": "Large number test",
+    "test_type": "hidden",
+    "input_data": {"args": [2147483648]},
+    "expected_output": {"result": 2147483648}
+  }
 ]`;
 
       const messages: AIChatMessage[] = [
@@ -993,6 +1002,9 @@ Keep response concise but detailed. Escape all special characters.`;
     // Preprocess: Convert template literals (backticks) to escaped JSON strings
     jsonString = this.convertTemplateLiteralsToJSON(jsonString);
 
+    // Preprocess: Evaluate JavaScript expressions (like Math.pow())
+    jsonString = this.evaluateJavaScriptExpressions(jsonString);
+
     // Try to parse the JSON string
     try {
       return JSON.parse(jsonString);
@@ -1020,6 +1032,76 @@ Keep response concise but detailed. Escape all special characters.`;
         throw new Error('Could not parse JSON from AI response');
       }
     }
+  }
+
+  private evaluateJavaScriptExpressions(jsonString: string): string {
+    // Replace common JavaScript expressions with their evaluated values
+    // This handles cases where AI generates Math.pow(2, 31) instead of 2147483648
+
+    try {
+      // Find and evaluate Math.pow() expressions
+      jsonString = jsonString.replace(/Math\.pow\(([^,]+),\s*([^)]+)\)/g, (match, base, exp) => {
+        try {
+          const baseNum = parseFloat(base.trim());
+          const expNum = parseFloat(exp.trim());
+          if (!isNaN(baseNum) && !isNaN(expNum)) {
+            return Math.pow(baseNum, expNum).toString();
+          }
+        } catch (e) {
+          logger.warn('Failed to evaluate Math.pow expression', { match });
+        }
+        return match;
+      });
+
+      // Find and evaluate Math.floor() expressions
+      jsonString = jsonString.replace(/Math\.floor\(([^)]+)\)/g, (match, arg) => {
+        try {
+          const num = parseFloat(arg.trim());
+          if (!isNaN(num)) {
+            return Math.floor(num).toString();
+          }
+        } catch (e) {
+          logger.warn('Failed to evaluate Math.floor expression', { match });
+        }
+        return match;
+      });
+
+      // Find and evaluate Math.ceil() expressions
+      jsonString = jsonString.replace(/Math\.ceil\(([^)]+)\)/g, (match, arg) => {
+        try {
+          const num = parseFloat(arg.trim());
+          if (!isNaN(num)) {
+            return Math.ceil(num).toString();
+          }
+        } catch (e) {
+          logger.warn('Failed to evaluate Math.ceil expression', { match });
+        }
+        return match;
+      });
+
+      // Find and evaluate Math.max() and Math.min()
+      jsonString = jsonString.replace(/Math\.(max|min)\(([^)]+)\)/g, (match, func, args) => {
+        try {
+          const nums = args.split(',').map((s: string) => parseFloat(s.trim())).filter((n: number) => !isNaN(n));
+          if (nums.length > 0) {
+            const result = func === 'max' ? Math.max(...nums) : Math.min(...nums);
+            return result.toString();
+          }
+        } catch (e) {
+          logger.warn(`Failed to evaluate Math.${func} expression`, { match });
+        }
+        return match;
+      });
+
+      logger.debug('Evaluated JavaScript expressions in JSON', {
+        hadExpressions: jsonString !== jsonString
+      });
+
+    } catch (error) {
+      logger.warn('Error evaluating JavaScript expressions', { error });
+    }
+
+    return jsonString;
   }
 
   private cleanJSONString(jsonString: string): string {
