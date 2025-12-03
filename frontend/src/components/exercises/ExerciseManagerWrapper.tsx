@@ -20,9 +20,16 @@ export const ExerciseManagerWrapper: React.FC = () => {
 
     try {
       setLoading(true);
-      // Fetch full topic details including learning objectives
-      const response = await curriculumService.getTopicDetails('', topicId);
-      setTopic(response.topic);
+      // First get basic topic data to retrieve curriculum_id
+      const topicSummary = await curriculumService.getTopicSummary(topicId);
+
+      // Then fetch full details including learning objectives
+      const topicDetails = await curriculumService.getTopicDetails(
+        topicSummary.curriculum_id,
+        topicId
+      );
+
+      setTopic(topicDetails.topic);
     } catch (err: any) {
       setError(err.message || 'Failed to load topic');
     } finally {
