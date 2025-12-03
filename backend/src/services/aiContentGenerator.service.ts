@@ -310,9 +310,11 @@ Requirements:
    - input_data: {"args": [arg1, arg2, ...]}
    - expected_output: {"result": expectedValue}
 
-CRITICAL: Use ONLY literal values in JSON - NO JavaScript expressions, NO Math.pow(), NO function calls.
+CRITICAL: Use ONLY literal values in JSON - NO JavaScript expressions, NO Math.pow(), NO .repeat(), NO function calls.
 For large numbers, write them as literals: 2147483648 NOT Math.pow(2, 31)
+For repeated strings, write them out fully: "aaaaaaaaaa" NOT "a".repeat(10)
 For strings, use quoted strings: "hello" NOT 'hello'
+For long repeated strings, just use a reasonable length or describe the test differently
 
 Return as JSON array:
 [
@@ -1110,6 +1112,20 @@ Keep response concise but detailed. Escape all special characters.`;
           }
         } catch (e) {
           logger.warn(`Failed to evaluate Math.${func} expression`, { match });
+        }
+        return match;
+      });
+
+      // Find and evaluate string.repeat() expressions
+      jsonString = jsonString.replace(/"([^"\\]*)"\s*\.repeat\((\d+)\)/g, (match, str, count) => {
+        try {
+          const repeatCount = parseInt(count, 10);
+          if (!isNaN(repeatCount) && repeatCount >= 0 && repeatCount <= 1000) {
+            const repeated = str.repeat(repeatCount);
+            return `"${repeated}"`;
+          }
+        } catch (e) {
+          logger.warn('Failed to evaluate string.repeat expression', { match });
         }
         return match;
       });
