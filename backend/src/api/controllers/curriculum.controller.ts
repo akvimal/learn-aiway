@@ -589,9 +589,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to add topics to any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError('You do not have permission to add topics to this curriculum');
       }
