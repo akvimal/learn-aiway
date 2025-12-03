@@ -16,7 +16,6 @@ import { AIChat } from './components/ai/AIChat';
 import { QuizManager } from './components/quiz/QuizManager';
 import { QuizTaker } from './components/quiz/QuizTaker';
 import { QuizResults } from './components/quiz/QuizResults';
-import { QuizHistory } from './components/quiz/QuizHistory';
 import { QuizReview } from './components/quiz/QuizReview';
 import { ExerciseList } from './components/exercises/ExerciseList';
 import { ExerciseManagerWrapper } from './components/exercises/ExerciseManagerWrapper';
@@ -341,18 +340,6 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <QuizResults />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* View quiz history */}
-      <Route
-        path="/my/quiz-history"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <QuizHistory />
-            </AppLayout>
           </ProtectedRoute>
         }
       />

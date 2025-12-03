@@ -63,10 +63,6 @@ export const Navigation: React.FC = () => {
                 Browse Curricula
               </Link>
 
-              <Link to="/my/quiz-history" className={navLinkClass('/my/quiz-history')}>
-                My Quizzes
-              </Link>
-
               {user?.role === UserRole.INSTRUCTOR || user?.role === UserRole.ADMIN ? (
                 <>
                   <Link to="/instructor/curricula" className={navLinkClass('/instructor/curricula')}>
@@ -168,14 +164,6 @@ export const Navigation: React.FC = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Browse Curricula
-            </Link>
-
-            <Link
-              to="/my/quiz-history"
-              className={mobileNavLinkClass('/my/quiz-history')}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              My Quizzes
             </Link>
 
             {user?.role === UserRole.INSTRUCTOR || user?.role === UserRole.ADMIN ? (
