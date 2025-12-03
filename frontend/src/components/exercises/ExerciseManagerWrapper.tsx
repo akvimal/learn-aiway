@@ -29,7 +29,8 @@ export const ExerciseManagerWrapper: React.FC = () => {
         topicId
       );
 
-      setTopic(topicDetails.topic);
+      // topicDetails directly contains the topic data
+      setTopic(topicDetails);
     } catch (err: any) {
       setError(err.message || 'Failed to load topic');
     } finally {
