@@ -21,6 +21,16 @@ export class ExerciseRepository {
     is_published?: boolean;
     created_by: string;
   }): Promise<Exercise> {
+    // If order_index not provided, get the next available one
+    let orderIndex = exerciseData.order_index;
+    if (orderIndex === undefined || orderIndex === null) {
+      const maxOrderResult = await database.query<any>(
+        'SELECT COALESCE(MAX(order_index), -1) as max_order FROM exercises WHERE topic_id = $1',
+        [exerciseData.topic_id]
+      );
+      orderIndex = (maxOrderResult.rows[0].max_order + 1);
+    }
+
     const result = await database.query<any>(
       `INSERT INTO exercises (
         topic_id, title, description, instructions, language, difficulty_level,
@@ -38,7 +48,7 @@ export class ExerciseRepository {
         exerciseData.starter_code,
         exerciseData.solution_code,
         exerciseData.explanation,
-        exerciseData.order_index ?? 0,
+        orderIndex,
         exerciseData.points ?? 10,
         exerciseData.time_limit_seconds ?? 300,
         exerciseData.is_published ?? false,
