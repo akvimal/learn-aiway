@@ -643,9 +643,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to update topics in any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError('You do not have permission to update topics in this curriculum');
       }
@@ -685,9 +686,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to delete topics from any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError('You do not have permission to delete topics from this curriculum');
       }
@@ -725,9 +727,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to add objectives to any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError(
           'You do not have permission to add learning objectives to this curriculum'
@@ -797,9 +800,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to update objectives in any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError(
           'You do not have permission to update learning objectives in this curriculum'
@@ -841,9 +845,10 @@ export class CurriculumController {
         throw new NotFoundError('Curriculum not found');
       }
 
+      // Allow instructors and admins to delete objectives from any curriculum
       if (
         req.user?.role !== 'admin' &&
-        existing.created_by !== req.user?.userId
+        req.user?.role !== 'instructor'
       ) {
         throw new ValidationError(
           'You do not have permission to delete learning objectives from this curriculum'
