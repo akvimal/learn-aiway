@@ -719,7 +719,7 @@ export class CurriculumController {
   ): Promise<void> {
     try {
       const { curriculumId, topicId } = req.params;
-      const { objective_text, order_index } = req.body;
+      const { objective_text, order_index, requires_exercise } = req.body;
 
       // Check if curriculum exists and user has permission
       const existing = await curriculumRepository.findById(curriculumId);
@@ -753,6 +753,7 @@ export class CurriculumController {
           topic_id: topicId,
           objective_text,
           order_index: finalOrderIndex,
+          requires_exercise: requires_exercise ?? true,
         });
       } catch (error: any) {
         // If duplicate key error, use next available order_index
@@ -762,6 +763,7 @@ export class CurriculumController {
             topic_id: topicId,
             objective_text,
             order_index: finalOrderIndex,
+            requires_exercise: requires_exercise ?? true,
           });
         } else {
           throw error;

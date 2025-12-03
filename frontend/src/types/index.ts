@@ -139,6 +139,7 @@ export interface LearningObjective {
   topic_id: string;
   objective_text: string;
   order_index: number;
+  requires_exercise: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -226,11 +227,13 @@ export interface TopicUpdateInput {
 export interface LearningObjectiveCreateInput {
   objective_text: string;
   order_index?: number;
+  requires_exercise?: boolean;
 }
 
 export interface LearningObjectiveUpdateInput {
   objective_text?: string;
   order_index?: number;
+  requires_exercise?: boolean;
 }
 
 export interface CurriculaListResponse {

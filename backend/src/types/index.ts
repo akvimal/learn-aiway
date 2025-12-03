@@ -199,6 +199,7 @@ export interface LearningObjective {
   topic_id: string;
   objective_text: string;
   order_index: number;
+  requires_exercise: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -207,6 +208,7 @@ export interface LearningObjectiveCreateInput {
   topic_id: string;
   objective_text: string;
   order_index: number;
+  requires_exercise?: boolean;
 }
 
 export interface UserCurriculumProgress {

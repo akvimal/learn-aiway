@@ -176,9 +176,11 @@ export const TopicManager: React.FC = () => {
       // Add new objectives
       const objectives = response.objectives;
       for (let i = 0; i < objectives.length; i++) {
+        const obj = objectives[i];
         await curriculumService.addLearningObjective(id, topicId, {
-          objective_text: objectives[i],
+          objective_text: typeof obj === 'string' ? obj : obj.objective,
           order_index: i,
+          requires_exercise: typeof obj === 'string' ? true : obj.requiresExercise,
         });
       }
 

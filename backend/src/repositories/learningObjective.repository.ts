@@ -33,13 +33,19 @@ export class LearningObjectiveRepository {
       INSERT INTO learning_objectives (
         topic_id,
         objective_text,
-        order_index
+        order_index,
+        requires_exercise
       )
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
-    const values = [data.topic_id, data.objective_text, data.order_index];
+    const values = [
+      data.topic_id,
+      data.objective_text,
+      data.order_index,
+      data.requires_exercise ?? true,
+    ];
 
     const result = await database.query<LearningObjective>(query, values);
     return new LearningObjectiveModel(result.rows[0]);

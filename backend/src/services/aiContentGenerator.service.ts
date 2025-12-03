@@ -468,7 +468,7 @@ Return as JSON array:
     input: GenerateLearningObjectivesInput,
     userId: string,
     providerId: string
-  ): Promise<string[]> {
+  ): Promise<Array<{ objective: string; requiresExercise: boolean }>> {
     try {
       const provider = await AIProviderFactory.getProvider(providerId, userId);
 
@@ -490,6 +490,13 @@ CRITICAL REQUIREMENTS:
 8. Each objective should be 1-2 sentences
 9. Reference specific concepts, tools, or techniques mentioned in the topic title and content
 
+OBJECTIVE CLASSIFICATION:
+For each objective, classify if it requires hands-on coding exercise practice:
+- PRACTICAL (requiresExercise: true): Objectives that involve writing code, implementing, building, creating, developing
+  Examples: "Implement a function that...", "Write code to...", "Build a program that...", "Create a class that..."
+- CONCEPTUAL (requiresExercise: false): Objectives about understanding, explaining, comparing, describing theory
+  Examples: "Explain the difference between...", "Describe how...", "Compare X and Y", "Understand the concept of..."
+
 WRONG (too generic or wrong language):
 - "Understand the basics of programming"
 - "Learn how to write code"
@@ -497,17 +504,21 @@ WRONG (too generic or wrong language):
 - Using Python syntax when topic is about JavaScript
 
 RIGHT (specific to the actual topic):
-- If topic is about Java variables: "Explain the difference between primitive and reference types in Java"
-- If topic is about Python functions: "Demonstrate the use of *args and **kwargs in Python function definitions"
-- If topic is about JavaScript variables: "Compare var, let, and const declarations and explain scope differences"
+- If topic is about Java variables: {"objective": "Explain the difference between primitive and reference types in Java", "requiresExercise": false}
+- If topic is about Python functions: {"objective": "Implement a function using *args and **kwargs in Python", "requiresExercise": true}
+- If topic is about JavaScript variables: {"objective": "Compare var, let, and const declarations and explain scope differences", "requiresExercise": false}
 
-Return ONLY a valid JSON array of strings (no markdown, no code blocks):
-["Objective 1", "Objective 2", "Objective 3", ...]`;
+Return ONLY a valid JSON array of objects (no markdown, no code blocks):
+[
+  {"objective": "Objective 1 text", "requiresExercise": true},
+  {"objective": "Objective 2 text", "requiresExercise": false},
+  ...
+]`;
 
       const messages: AIChatMessage[] = [
         {
           role: 'system',
-          content: 'You are an expert instructional designer creating HIGHLY SPECIFIC learning objectives using Bloom\'s Taxonomy. Your objectives must be uniquely tailored to each topic - never use generic statements. Return ONLY a valid JSON array, no markdown formatting.',
+          content: 'You are an expert instructional designer creating HIGHLY SPECIFIC learning objectives using Bloom\'s Taxonomy. Your objectives must be uniquely tailored to each topic - never use generic statements. For each objective, classify whether it requires hands-on coding practice (true) or is conceptual/theoretical (false). Return ONLY a valid JSON array, no markdown formatting.',
         },
         { role: 'user', content: prompt },
       ];
@@ -528,6 +539,8 @@ Return ONLY a valid JSON array of strings (no markdown, no code blocks):
       logger.info('Generated learning objectives', {
         topicId: input.topicId,
         numObjectives: objectives.length,
+        practicalCount: objectives.filter(o => o.requiresExercise).length,
+        conceptualCount: objectives.filter(o => !o.requiresExercise).length,
       });
 
       return objectives;
