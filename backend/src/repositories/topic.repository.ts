@@ -230,11 +230,11 @@ export class TopicRepository {
 
     // Get quizzes (if they exist)
     const quizzesQuery = await database.query(
-      `SELECT id, title, description, difficulty_level, time_limit_minutes,
-              passing_score, is_published, order_index, created_at
+      `SELECT id, title, description, time_limit_minutes,
+              passing_score, is_published, created_at
        FROM quizzes
        WHERE topic_id = $1
-       ORDER BY order_index ASC`,
+       ORDER BY created_at ASC`,
       [topicId]
     );
 
