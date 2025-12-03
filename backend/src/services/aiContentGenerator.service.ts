@@ -480,22 +480,25 @@ Difficulty Level: ${input.difficultyLevel}
 
 CRITICAL REQUIREMENTS:
 1. Objectives MUST be SPECIFIC to "${input.topicTitle}" - not generic statements that could apply to any topic
-2. Use concrete action verbs (understand, explain, implement, analyze, create, compare, demonstrate, etc.)
-3. Make each objective measurable and testable
-4. Appropriate for ${input.difficultyLevel} level learners
-5. Focus on what learners will be able to DO after completing THIS SPECIFIC topic
-6. Follow Bloom's Taxonomy principles (Knowledge -> Comprehension -> Application -> Analysis -> Synthesis -> Evaluation)
-7. Each objective should be 1-2 sentences
-8. Reference specific concepts, tools, or techniques mentioned in the topic title and content
+2. Pay CLOSE ATTENTION to the topic title and content - if it says "Java", use Java examples; if it says "Python", use Python examples
+3. Use concrete action verbs (understand, explain, implement, analyze, create, compare, demonstrate, etc.)
+4. Make each objective measurable and testable
+5. Appropriate for ${input.difficultyLevel} level learners
+6. Focus on what learners will be able to DO after completing THIS SPECIFIC topic
+7. Follow Bloom's Taxonomy principles (Knowledge -> Comprehension -> Application -> Analysis -> Synthesis -> Evaluation)
+8. Each objective should be 1-2 sentences
+9. Reference specific concepts, tools, or techniques mentioned in the topic title and content
 
-WRONG (too generic):
+WRONG (too generic or wrong language):
 - "Understand the basics of programming"
 - "Learn how to write code"
+- Using JavaScript examples when topic is about Java
+- Using Python syntax when topic is about JavaScript
 
-RIGHT (specific to topic):
-- "Explain the difference between var, let, and const in JavaScript and when to use each"
-- "Implement arrow functions and demonstrate understanding of their lexical 'this' binding"
-- "Compare traditional functions with arrow functions and identify use cases for each"
+RIGHT (specific to the actual topic):
+- If topic is about Java variables: "Explain the difference between primitive and reference types in Java"
+- If topic is about Python functions: "Demonstrate the use of *args and **kwargs in Python function definitions"
+- If topic is about JavaScript variables: "Compare var, let, and const declarations and explain scope differences"
 
 Return ONLY a valid JSON array of strings (no markdown, no code blocks):
 ["Objective 1", "Objective 2", "Objective 3", ...]`;
