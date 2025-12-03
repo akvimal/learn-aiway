@@ -227,6 +227,12 @@ Rules:
         max_tokens: 1500,
       });
 
+      // Log the raw response for debugging
+      logger.debug('AI response for hints', {
+        content: response.content,
+        length: response.content.length
+      });
+
       // Parse JSON array
       const hints = this.parseJSONResponse(response.content);
 
@@ -922,6 +928,65 @@ Keep response concise but detailed. Escape all special characters.`;
     }
 
     if (!jsonString) {
+      // Try to fix incomplete JSON arrays (missing closing bracket)
+      const trimmed = content.trim();
+      if (trimmed.startsWith('[')) {
+        // Count open brackets and try to complete the array
+        let bracketCount = 0;
+        let lastCompleteItem = 0;
+        let inString = false;
+        let escaped = false;
+
+        for (let i = 0; i < trimmed.length; i++) {
+          const char = trimmed[i];
+
+          if (char === '\\' && inString) {
+            escaped = !escaped;
+            continue;
+          }
+
+          if (char === '"' && !escaped) {
+            inString = !inString;
+          }
+
+          if (!inString) {
+            if (char === '[') bracketCount++;
+            if (char === ']') bracketCount--;
+
+            // Track last complete item (after a comma outside strings)
+            if (char === ',' && bracketCount === 1) {
+              lastCompleteItem = i;
+            }
+          }
+
+          escaped = false;
+        }
+
+        // If array is incomplete, try to complete it
+        if (bracketCount > 0) {
+          // Find the last complete string before truncation
+          let fixed = trimmed;
+          if (lastCompleteItem > 0) {
+            // Truncate after last complete item and close array
+            fixed = trimmed.substring(0, lastCompleteItem) + '\n]';
+          } else if (!trimmed.endsWith(']')) {
+            // Just add closing bracket if there's at least one complete item
+            fixed = trimmed + '\n]';
+          }
+
+          logger.info('Attempting to fix incomplete JSON array', {
+            original: trimmed.substring(0, 200),
+            fixed: fixed.substring(0, 200)
+          });
+
+          try {
+            return JSON.parse(fixed);
+          } catch (fixError) {
+            logger.warn('Failed to fix incomplete JSON', { error: fixError });
+          }
+        }
+      }
+
       throw new Error('Could not find JSON in AI response');
     }
 
