@@ -49,7 +49,7 @@ export interface GenerateCurriculumTopicsInput {
   curriculumId: string;
   curriculumTitle: string;
   curriculumDescription: string;
-  difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   domain: string;
   numTopics: number; // 3-10 topics
 }
@@ -59,7 +59,7 @@ export interface GenerateLearningObjectivesInput {
   topicTitle: string;
   topicDescription: string;
   topicContent: string;
-  difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   numObjectives: number; // 3-8 objectives
 }
 

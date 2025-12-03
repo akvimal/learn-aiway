@@ -23,6 +23,8 @@ export class CurriculumController {
         page = 1,
         limit = 20,
         domain,
+        category,
+        specialization,
         difficulty_level,
         is_published,
         search,
@@ -41,6 +43,14 @@ export class CurriculumController {
 
       if (domain) {
         filters.domain = domain as string;
+      }
+
+      if (category) {
+        filters.category = category as string;
+      }
+
+      if (specialization) {
+        filters.specialization = specialization as string;
       }
 
       if (difficulty_level) {
@@ -353,21 +363,29 @@ export class CurriculumController {
         title,
         description,
         domain,
+        category,
+        specialization,
         difficulty_level,
         estimated_duration_hours,
         tags,
         metadata,
       } = req.body;
 
-      if (!title || !domain) {
-        throw new ValidationError('Title and domain are required');
+      // Support both old (domain) and new (category/specialization) formats
+      const hasNewFormat = category && specialization;
+      const hasOldFormat = domain;
+
+      if (!title || (!hasNewFormat && !hasOldFormat)) {
+        throw new ValidationError('Title and either (category + specialization) or domain are required');
       }
 
       const curriculum = await curriculumRepository.create(
         {
           title,
           description,
-          domain,
+          domain: domain || specialization?.toLowerCase().replace(/\s+/g, '-'),
+          category,
+          specialization,
           difficulty_level,
           estimated_duration_hours,
           tags,

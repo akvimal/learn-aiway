@@ -4,7 +4,9 @@ export class CurriculumModel {
   id: string;
   title: string;
   description: string | null;
-  domain: string;
+  domain?: string | null;
+  category: string | null;
+  specialization: string | null;
   difficulty_level: DifficultyLevel;
   created_by: string;
   is_published: boolean;
@@ -19,6 +21,8 @@ export class CurriculumModel {
     this.title = data.title;
     this.description = data.description;
     this.domain = data.domain;
+    this.category = data.category;
+    this.specialization = data.specialization;
     this.difficulty_level = data.difficulty_level;
     this.created_by = data.created_by;
     this.is_published = data.is_published;
@@ -35,6 +39,8 @@ export class CurriculumModel {
       title: this.title,
       description: this.description,
       domain: this.domain,
+      category: this.category,
+      specialization: this.specialization,
       difficulty_level: this.difficulty_level,
       created_by: this.created_by,
       is_published: this.is_published,

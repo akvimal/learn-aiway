@@ -24,6 +24,8 @@ export class CurriculumRepository {
    */
   async findAll(filters?: {
     domain?: string;
+    category?: string;
+    specialization?: string;
     difficulty_level?: DifficultyLevel;
     is_published?: boolean;
     created_by?: string;
@@ -38,6 +40,18 @@ export class CurriculumRepository {
     if (filters?.domain) {
       conditions.push(`domain = $${paramIndex}`);
       values.push(filters.domain);
+      paramIndex++;
+    }
+
+    if (filters?.category) {
+      conditions.push(`category = $${paramIndex}`);
+      values.push(filters.category);
+      paramIndex++;
+    }
+
+    if (filters?.specialization) {
+      conditions.push(`specialization = $${paramIndex}`);
+      values.push(filters.specialization);
       paramIndex++;
     }
 
@@ -105,20 +119,24 @@ export class CurriculumRepository {
         title,
         description,
         domain,
+        category,
+        specialization,
         difficulty_level,
         created_by,
         estimated_duration_hours,
         tags,
         metadata
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
 
     const values = [
       data.title,
       data.description || null,
-      data.domain,
+      data.domain || null,
+      data.category || null,
+      data.specialization || null,
       data.difficulty_level,
       createdBy,
       data.estimated_duration_hours || null,
@@ -156,6 +174,18 @@ export class CurriculumRepository {
     if (updates.domain !== undefined) {
       fields.push(`domain = $${paramIndex}`);
       values.push(updates.domain);
+      paramIndex++;
+    }
+
+    if (updates.category !== undefined) {
+      fields.push(`category = $${paramIndex}`);
+      values.push(updates.category);
+      paramIndex++;
+    }
+
+    if (updates.specialization !== undefined) {
+      fields.push(`specialization = $${paramIndex}`);
+      values.push(updates.specialization);
       paramIndex++;
     }
 

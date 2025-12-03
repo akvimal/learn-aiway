@@ -243,20 +243,26 @@ export const generateTopics = async (
       curriculumDescription,
       difficultyLevel,
       domain,
+      category,
+      specialization,
       providerId,
       numTopics,
     } = req.body;
 
+    // Support both old (domain) and new (category/specialization) formats
+    // Use domain if provided, otherwise construct from category/specialization
+    const effectiveDomain = domain || (category && specialization ? `${category} - ${specialization}` : null);
+
     // Validation
-    if (!curriculumId || !curriculumTitle || !difficultyLevel || !domain) {
-      throw new BadRequestError('Missing required fields');
+    if (!curriculumId || !curriculumTitle || !difficultyLevel || !effectiveDomain) {
+      throw new BadRequestError('Missing required fields: curriculumId, curriculumTitle, difficultyLevel, and either domain or (category + specialization)');
     }
 
     if (!providerId) {
       throw new BadRequestError('providerId is required');
     }
 
-    const validDifficultyLevels = ['beginner', 'intermediate', 'advanced'];
+    const validDifficultyLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
     if (!validDifficultyLevels.includes(difficultyLevel)) {
       throw new BadRequestError('Invalid difficulty level');
     }
@@ -266,8 +272,8 @@ export const generateTopics = async (
         curriculumId,
         curriculumTitle,
         curriculumDescription,
-        difficultyLevel,
-        domain,
+        difficultyLevel: difficultyLevel as any, // Allow expert level
+        domain: effectiveDomain,
         numTopics: numTopics || 5,
       },
       userId,

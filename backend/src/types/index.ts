@@ -109,6 +109,7 @@ export enum DifficultyLevel {
   BEGINNER = 'beginner',
   INTERMEDIATE = 'intermediate',
   ADVANCED = 'advanced',
+  EXPERT = 'expert',
 }
 
 export enum TopicStatus {
@@ -121,7 +122,9 @@ export interface Curriculum {
   id: string;
   title: string;
   description: string | null;
-  domain: string;
+  domain?: string | null; // Deprecated: kept for backward compatibility
+  category: string | null;
+  specialization: string | null;
   difficulty_level: DifficultyLevel;
   created_by: string;
   is_published: boolean;
@@ -135,7 +138,9 @@ export interface Curriculum {
 export interface CurriculumCreateInput {
   title: string;
   description?: string;
-  domain: string;
+  domain?: string; // Deprecated: kept for backward compatibility
+  category?: string;
+  specialization?: string;
   difficulty_level: DifficultyLevel;
   estimated_duration_hours?: number;
   tags?: string[];
@@ -145,7 +150,9 @@ export interface CurriculumCreateInput {
 export interface CurriculumUpdateInput {
   title?: string;
   description?: string;
-  domain?: string;
+  domain?: string; // Deprecated: kept for backward compatibility
+  category?: string;
+  specialization?: string;
   difficulty_level?: DifficultyLevel;
   is_published?: boolean;
   estimated_duration_hours?: number;

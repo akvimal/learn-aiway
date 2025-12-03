@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
+import {
+  getAllCategories,
+  getSpecializationsForCategory,
+  DIFFICULTY_LEVELS,
+} from '../../constants/curriculum';
 import type {
   CurriculumCreateInput,
   CurriculumUpdateInput,
@@ -15,11 +20,15 @@ export const CurriculumEditor: React.FC = () => {
   // Curriculum form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [domain, setDomain] = useState('');
+  const [category, setCategory] = useState('');
+  const [specialization, setSpecialization] = useState('');
   const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevel>('beginner' as DifficultyLevel);
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+
+  const categories = getAllCategories();
+  const availableSpecializations = category ? getSpecializationsForCategory(category) : [];
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -43,7 +52,8 @@ export const CurriculumEditor: React.FC = () => {
 
       setTitle(curriculum.title);
       setDescription(curriculum.description || '');
-      setDomain(curriculum.domain);
+      setCategory(curriculum.category);
+      setSpecialization(curriculum.specialization);
       setDifficultyLevel(curriculum.difficulty_level);
       setEstimatedDuration(curriculum.estimated_duration_hours?.toString() || '');
       setTags(curriculum.tags || []);
@@ -62,7 +72,8 @@ export const CurriculumEditor: React.FC = () => {
       const data: CurriculumCreateInput | CurriculumUpdateInput = {
         title,
         description: description || undefined,
-        domain,
+        category,
+        specialization,
         difficulty_level: difficultyLevel,
         estimated_duration_hours: estimatedDuration ? parseInt(estimatedDuration) : undefined,
         tags: tags.length > 0 ? tags : undefined,
@@ -180,35 +191,62 @@ export const CurriculumEditor: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Domain <span className="text-red-500">*</span>
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
+                  value={category}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setSpecialization(''); // Reset specialization when category changes
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Select domain</option>
-                  <option value="programming">Programming</option>
-                  <option value="cloud">Cloud Computing</option>
-                  <option value="data-science">Data Science</option>
-                  <option value="finance">Finance</option>
-                  <option value="business">Business</option>
-                  <option value="design">Design</option>
+                  <option value="">Select category</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Difficulty Level
+                  Specialization <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={specialization}
+                  onChange={(e) => setSpecialization(e.target.value)}
+                  disabled={!category}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {category ? 'Select specialization' : 'Select category first'}
+                  </option>
+                  {availableSpecializations.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Difficulty Level <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={difficultyLevel}
                   onChange={(e) => setDifficultyLevel(e.target.value as DifficultyLevel)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
+                  {DIFFICULTY_LEVELS.map((level) => (
+                    <option key={level.value} value={level.value}>
+                      {level.icon} {level.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -263,7 +301,7 @@ export const CurriculumEditor: React.FC = () => {
           <div className="mt-6 flex gap-3">
             <button
               onClick={handleSaveCurriculum}
-              disabled={saving || !title || !domain}
+              disabled={saving || !title || !category || !specialization}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : isEditMode ? 'Update Curriculum' : 'Create Curriculum'}

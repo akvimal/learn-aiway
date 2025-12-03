@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { curriculumService } from '../../services/curriculum.service';
+import {
+  getAllCategories,
+  getSpecializationsForCategory,
+  getDifficultyLevelInfo,
+  DIFFICULTY_LEVELS,
+} from '../../constants/curriculum';
 import type { Curriculum, DifficultyLevel, CurriculumFilters } from '../../types';
 
 export const CurriculumBrowser: React.FC = () => {
@@ -9,17 +15,21 @@ export const CurriculumBrowser: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [domainFilter, setDomainFilter] = useState<string>('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // The actual search being applied
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [specializationFilter, setSpecializationFilter] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyLevel | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
   const ITEMS_PER_PAGE = 12;
+  const categories = getAllCategories();
+  const availableSpecializations = categoryFilter ? getSpecializationsForCategory(categoryFilter) : [];
 
   useEffect(() => {
     loadCurricula();
-  }, [currentPage, domainFilter, difficultyFilter]);
+  }, [currentPage, categoryFilter, specializationFilter, difficultyFilter, activeSearchTerm]);
 
   const loadCurricula = async () => {
     try {
@@ -32,9 +42,10 @@ export const CurriculumBrowser: React.FC = () => {
         is_published: true,
       };
 
-      if (domainFilter) filters.domain = domainFilter;
+      if (categoryFilter) filters.category = categoryFilter;
+      if (specializationFilter) filters.specialization = specializationFilter;
       if (difficultyFilter) filters.difficulty_level = difficultyFilter;
-      if (searchTerm) filters.search = searchTerm;
+      if (activeSearchTerm) filters.search = activeSearchTerm;
 
       const response = await curriculumService.getAllCurricula(filters);
       setCurricula(response.curricula);
@@ -49,8 +60,8 @@ export const CurriculumBrowser: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setActiveSearchTerm(searchTerm);
     setCurrentPage(1);
-    loadCurricula();
   };
 
   const handleCurriculumClick = (id: string) => {
@@ -65,6 +76,8 @@ export const CurriculumBrowser: React.FC = () => {
         return 'bg-yellow-100 text-yellow-800';
       case 'advanced':
         return 'bg-red-100 text-red-800';
+      case 'expert':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -102,28 +115,52 @@ export const CurriculumBrowser: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <select
-                  value={domainFilter}
+                  value={categoryFilter}
                   onChange={(e) => {
-                    setDomainFilter(e.target.value);
+                    setCategoryFilter(e.target.value);
+                    setSpecializationFilter(''); // Reset specialization when category changes
                     setCurrentPage(1);
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">All Domains</option>
-                  <option value="programming">Programming</option>
-                  <option value="cloud">Cloud Computing</option>
-                  <option value="data-science">Data Science</option>
-                  <option value="finance">Finance</option>
-                  <option value="business">Business</option>
-                  <option value="design">Design</option>
+                  <option value="">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div className="flex-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Specialization
+                </label>
+                <select
+                  value={specializationFilter}
+                  onChange={(e) => {
+                    setSpecializationFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  disabled={!categoryFilter}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {categoryFilter ? 'All Specializations' : 'Select category first'}
+                  </option>
+                  {availableSpecializations.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Difficulty
                 </label>
@@ -136,9 +173,11 @@ export const CurriculumBrowser: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">All Levels</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
+                  {DIFFICULTY_LEVELS.map((level) => (
+                    <option key={level.value} value={level.value}>
+                      {level.icon} {level.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -186,17 +225,24 @@ export const CurriculumBrowser: React.FC = () => {
                     {curriculum.description || 'No description available'}
                   </p>
 
-                  <div className="flex items-center gap-2 mb-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
-                        curriculum.difficulty_level
-                      )}`}
-                    >
-                      {curriculum.difficulty_level}
-                    </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {curriculum.domain}
-                    </span>
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
+                          curriculum.difficulty_level
+                        )}`}
+                      >
+                        {getDifficultyLevelInfo(curriculum.difficulty_level).icon}{' '}
+                        {curriculum.difficulty_level}
+                      </span>
+                    </div>
+                    {curriculum.category && curriculum.specialization && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{curriculum.category}</span>
+                        <span className="mx-1">›</span>
+                        <span>{curriculum.specialization}</span>
+                      </div>
+                    )}
                   </div>
 
                   {curriculum.estimated_duration_hours && (
